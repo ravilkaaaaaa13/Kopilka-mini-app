@@ -202,7 +202,7 @@ function clearTransactions() {
 }
 
 function renderUser() {
-  nodes.userPill.textContent = initials(state.user);
+  nodes.userPill.textContent = "💰";
   nodes.runtimeLabel.textContent = isTelegramRuntime ? "Telegram" : "Браузер";
 }
 
