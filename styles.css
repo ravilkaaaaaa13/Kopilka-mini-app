@@ -94,6 +94,7 @@ h2 {
   border-radius: 50%;
   background: var(--accent);
   color: #ffffff;
+  font-size: 24px;
   font-weight: 850;
   box-shadow: var(--shadow);
 }
