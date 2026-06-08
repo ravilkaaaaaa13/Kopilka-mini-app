@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Копилка</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  </head>
+  <body>
+    <main class="app">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow">Копилка</p>
+          <h1>Учет денег</h1>
+        </div>
+        <div class="user-pill" id="user-pill">TG</div>
+      </header>
+
+      <section class="balance-panel" aria-label="Сводка">
+        <span class="panel-label">Баланс</span>
+        <strong id="balance">0 ₸</strong>
+        <div class="summary-grid">
+          <div>
+            <span>Доходы</span>
+            <b id="income-total">0 ₸</b>
+          </div>
+          <div>
+            <span>Расходы</span>
+            <b id="expense-total">0 ₸</b>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>Новая операция</h2>
+          <span id="runtime-label">Браузер</span>
+        </div>
+
+        <div class="type-toggle" role="group" aria-label="Тип операции">
+          <button class="type-button is-active" type="button" data-type="expense">Расход</button>
+          <button class="type-button" type="button" data-type="income">Доход</button>
+        </div>
+
+        <form class="entry-form" id="entry-form">
+          <label>
+            <span>Сумма</span>
+            <input id="amount" inputmode="decimal" name="amount" placeholder="Например 2500" required />
+          </label>
+
+          <label>
+            <span>Категория</span>
+            <select id="category" name="category"></select>
+          </label>
+
+          <label>
+            <span>Заметка</span>
+            <input id="note" name="note" maxlength="60" placeholder="Кофе, зарплата, такси..." />
+          </label>
+
+          <button class="primary-button" type="submit">Сохранить</button>
+        </form>
+
+        <p class="send-status" id="send-status" hidden></p>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>История</h2>
+          <button class="ghost-button" id="clear-button" type="button">Очистить</button>
+        </div>
+        <ul class="transaction-list" id="transaction-list"></ul>
+        <p class="empty-state" id="empty-state">Пока операций нет. Добавьте первый доход или расход.</p>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
