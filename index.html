@@ -9,69 +9,164 @@
   </head>
   <body>
     <main class="app">
-      <header class="app-header">
-        <div>
-          <p class="eyebrow">Копилка</p>
-          <h1>Учет денег</h1>
-        </div>
-        <div class="user-pill" id="user-pill">TG</div>
-      </header>
+      <section class="screen is-active" id="home-screen" aria-label="Главный экран">
+        <header class="app-header">
+          <div>
+            <p class="eyebrow">Копилка</p>
+            <h1>Мои копилки</h1>
+          </div>
+          <button class="round-button" id="open-create-button" type="button" aria-label="Добавить копилку">+</button>
+        </header>
 
-      <section class="balance-panel" aria-label="Сводка">
-        <span class="panel-label">Баланс</span>
-        <strong id="balance">0 ₸</strong>
-        <div class="summary-grid">
-          <div>
-            <span>Доходы</span>
-            <b id="income-total">0 ₸</b>
-          </div>
-          <div>
-            <span>Расходы</span>
-            <b id="expense-total">0 ₸</b>
-          </div>
-        </div>
+        <section class="balance-card">
+          <span class="muted-label">Общий баланс</span>
+          <strong id="total-balance">0 ₸</strong>
+          <p>Сумма накоплений по всем активным целям</p>
+        </section>
+
+        <section class="goal-list" id="goal-list" aria-label="Список копилок"></section>
       </section>
 
-      <section class="panel">
-        <div class="section-head">
-          <h2>Новая операция</h2>
-          <span id="runtime-label">Браузер</span>
-        </div>
+      <section class="screen" id="detail-screen" aria-label="Выбранная копилка">
+        <header class="app-header">
+          <button class="icon-button" data-nav="home" type="button" aria-label="Назад">‹</button>
+          <h1 id="detail-heading">Копилка</h1>
+          <span class="header-spacer"></span>
+        </header>
 
-        <div class="type-toggle" role="group" aria-label="Тип операции">
-          <button class="type-button is-active" type="button" data-type="expense">Расход</button>
-          <button class="type-button" type="button" data-type="income">Доход</button>
-        </div>
+        <section class="goal-detail-card">
+          <div class="detail-title-row">
+            <span class="detail-icon" id="detail-icon">💰</span>
+            <div>
+              <span class="muted-label">Выбранная цель</span>
+              <h2 id="detail-title">Новая копилка</h2>
+            </div>
+          </div>
 
-        <form class="entry-form" id="entry-form">
+          <div class="detail-money-grid">
+            <div>
+              <span>Цель</span>
+              <strong id="detail-target">0 ₸</strong>
+            </div>
+            <div>
+              <span>Накоплено</span>
+              <strong id="detail-saved">0 ₸</strong>
+            </div>
+            <div>
+              <span>Осталось</span>
+              <strong id="detail-left">0 ₸</strong>
+            </div>
+          </div>
+
+          <div class="progress-block">
+            <div class="progress-row">
+              <span>Прогресс</span>
+              <strong id="detail-percent">0%</strong>
+            </div>
+            <div class="progress-track">
+              <span class="progress-fill" id="detail-progress"></span>
+            </div>
+          </div>
+        </section>
+
+        <section class="action-grid">
+          <button class="primary-button" id="topup-button" type="button">+ Пополнить</button>
+          <button class="secondary-button" id="withdraw-button" type="button">- Снять</button>
+          <button class="secondary-button" id="history-button" type="button">История</button>
+          <button class="danger-button" id="delete-goal-button" type="button">Удалить копилку</button>
+        </section>
+
+        <p class="status-message" id="detail-status" hidden></p>
+      </section>
+
+      <section class="screen" id="operation-screen" aria-label="Новая операция">
+        <header class="app-header">
+          <button class="icon-button" data-nav="detail" type="button" aria-label="Назад">‹</button>
+          <h1>Новая операция</h1>
+          <span class="header-spacer"></span>
+        </header>
+
+        <form class="panel form-panel" id="operation-form">
+          <div class="form-context">
+            <span class="muted-label">Копилка</span>
+            <strong id="operation-goal-name">Копилка</strong>
+          </div>
+
+          <div class="type-toggle" role="group" aria-label="Тип операции">
+            <button class="type-button is-active" type="button" data-operation-type="topup">Пополнение</button>
+            <button class="type-button" type="button" data-operation-type="withdraw">Снятие</button>
+          </div>
+
           <label>
             <span>Сумма</span>
-            <input id="amount" inputmode="decimal" name="amount" placeholder="Например 2500" required />
+            <input id="operation-amount" inputmode="decimal" name="amount" placeholder="Например 20000" required />
           </label>
 
           <label>
-            <span>Категория</span>
-            <select id="category" name="category"></select>
+            <span>Комментарий</span>
+            <input id="operation-comment" name="comment" maxlength="80" placeholder="Зарплата, бонус, покупка..." />
           </label>
 
           <label>
-            <span>Заметка</span>
-            <input id="note" name="note" maxlength="60" placeholder="Кофе, зарплата, такси..." />
+            <span>Дата</span>
+            <input id="operation-date" name="date" type="date" required />
           </label>
 
-          <button class="primary-button" type="submit">Сохранить</button>
+          <button class="primary-button wide-button" type="submit">Сохранить</button>
         </form>
 
-        <p class="send-status" id="send-status" hidden></p>
+        <p class="status-message" id="operation-status" hidden></p>
       </section>
 
-      <section class="panel">
-        <div class="section-head">
-          <h2>История</h2>
-          <button class="ghost-button" id="clear-button" type="button">Очистить</button>
-        </div>
-        <ul class="transaction-list" id="transaction-list"></ul>
-        <p class="empty-state" id="empty-state">Пока операций нет. Добавьте первый доход или расход.</p>
+      <section class="screen" id="history-screen" aria-label="История операций">
+        <header class="app-header">
+          <button class="icon-button" data-nav="detail" type="button" aria-label="Назад">‹</button>
+          <div>
+            <p class="eyebrow" id="history-goal-name">Копилка</p>
+            <h1>История</h1>
+          </div>
+          <span class="header-spacer"></span>
+        </header>
+
+        <ul class="history-list" id="history-list"></ul>
+        <p class="empty-state" id="history-empty">Операций пока нет. Пополните копилку или сделайте снятие.</p>
+      </section>
+
+      <section class="screen" id="create-screen" aria-label="Создание копилки">
+        <header class="app-header">
+          <button class="icon-button" data-nav="home" type="button" aria-label="Назад">‹</button>
+          <h1>Новая копилка</h1>
+          <span class="header-spacer"></span>
+        </header>
+
+        <form class="panel form-panel" id="goal-form">
+          <label>
+            <span>Название</span>
+            <input id="goal-title" name="title" maxlength="36" placeholder="Например новый телефон" required />
+          </label>
+
+          <label>
+            <span>Сумма цели</span>
+            <input id="goal-target" inputmode="decimal" name="target" placeholder="Например 500000" required />
+          </label>
+
+          <label>
+            <span>Иконка</span>
+            <select id="goal-icon" name="icon">
+              <option value="📱">📱 Телефон</option>
+              <option value="🚙">🚙 Машина</option>
+              <option value="🏝️">🏝️ Отпуск</option>
+              <option value="🏠">🏠 Дом</option>
+              <option value="🛡️">🛡️ Подушка</option>
+              <option value="🎁">🎁 Подарок</option>
+              <option value="💰">💰 Другое</option>
+            </select>
+          </label>
+
+          <button class="primary-button wide-button" type="submit">Создать копилку</button>
+        </form>
+
+        <p class="status-message" id="goal-status" hidden></p>
       </section>
     </main>
 
