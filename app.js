@@ -1,57 +1,45 @@
 const tg = window.Telegram?.WebApp;
 const isTelegramRuntime = Boolean(tg?.initData);
-const goalsKey = "kopilka.goals.v2";
-const transactionsKey = "kopilka.transactions.v2";
-
-const defaultGoals = [
-  { id: "phone", title: "Новый телефон", target: 500000, icon: "📱" },
-  { id: "car", title: "Машина", target: 3000000, icon: "🚙" },
-  { id: "vacation", title: "Отпуск в Турции", target: 700000, icon: "🏝️" },
-];
-
-const defaultTransactions = [
-  {
-    id: "demo-1",
-    goalId: "phone",
-    type: "topup",
-    amount: 120000,
-    comment: "Старт накоплений",
-    date: "2026-06-01",
-    createdAt: "2026-06-01T10:00:00.000Z",
-  },
-  {
-    id: "demo-2",
-    goalId: "car",
-    type: "topup",
-    amount: 750000,
-    comment: "Бонус",
-    date: "2026-06-02",
-    createdAt: "2026-06-02T10:00:00.000Z",
-  },
-  {
-    id: "demo-3",
-    goalId: "vacation",
-    type: "topup",
-    amount: 200000,
-    comment: "Подработка",
-    date: "2026-06-03",
-    createdAt: "2026-06-03T10:00:00.000Z",
-  },
-];
+const goalsKey = "kopilka.goals.v4";
+const transactionsKey = "kopilka.transactions.v4";
+const expensesKey = "kopilka.expenses.v2";
+const accountKey = "kopilka.account.v1";
+const defaultExpenseCategory = "Еда";
 
 const state = {
   currentView: "home",
   selectedGoalId: null,
+  editingAccountEntryId: null,
   operationType: "topup",
-  goals: loadList(goalsKey, defaultGoals),
-  transactions: loadList(transactionsKey, defaultTransactions).map(normalizeTransaction),
+  goals: loadList(goalsKey, []),
+  transactions: loadList(transactionsKey, []).map(normalizeTransaction),
+  expenses: loadList(expensesKey, []).map(normalizeExpense),
+  accountEntries: loadList(accountKey, []).map(normalizeAccountEntry),
 };
 
 const nodes = {
   screens: document.querySelectorAll(".screen"),
   totalBalance: document.querySelector("#total-balance"),
+  expensesTotal: document.querySelector("#expenses-total"),
   goalList: document.querySelector("#goal-list"),
+  homeEmpty: document.querySelector("#home-empty"),
   openCreateButton: document.querySelector("#open-create-button"),
+  openAccountHistoryButton: document.querySelector("#open-account-history-button"),
+  openIncomeButton: document.querySelector("#open-income-button"),
+  openExpensesButton: document.querySelector("#open-expenses-button"),
+  tabButtons: document.querySelectorAll("[data-tab-view]"),
+  quickAmountButtons: document.querySelectorAll("[data-quick-amount]"),
+  statsIncome: document.querySelector("#stats-income"),
+  statsExpenses: document.querySelector("#stats-expenses"),
+  statsSaved: document.querySelector("#stats-saved"),
+  statsBalance: document.querySelector("#stats-balance"),
+  statsExpenseMonth: document.querySelector("#stats-expense-month"),
+  statsExpenseScaleTotal: document.querySelector("#stats-expense-scale-total"),
+  statsExpenseScaleNote: document.querySelector("#stats-expense-scale-note"),
+  statsExpenseScaleMax: document.querySelector("#stats-expense-scale-max"),
+  statsExpenseScaleFill: document.querySelector("#stats-expense-scale-fill"),
+  statsCategoryList: document.querySelector("#stats-category-list"),
+  statsEmpty: document.querySelector("#stats-empty"),
   detailHeading: document.querySelector("#detail-heading"),
   detailIcon: document.querySelector("#detail-icon"),
   detailTitle: document.querySelector("#detail-title"),
@@ -75,6 +63,34 @@ const nodes = {
   historyGoalName: document.querySelector("#history-goal-name"),
   historyList: document.querySelector("#history-list"),
   historyEmpty: document.querySelector("#history-empty"),
+  accountHistoryBalance: document.querySelector("#account-history-balance"),
+  accountHistoryList: document.querySelector("#account-history-list"),
+  accountHistoryEmpty: document.querySelector("#account-history-empty"),
+  accountHistoryStatus: document.querySelector("#account-history-status"),
+  accountEditForm: document.querySelector("#account-edit-form"),
+  accountEditType: document.querySelector("#account-edit-type"),
+  accountEditAmount: document.querySelector("#account-edit-amount"),
+  accountEditComment: document.querySelector("#account-edit-comment"),
+  accountEditCategoryLabel: document.querySelector("#account-edit-category-label"),
+  accountEditCategory: document.querySelector("#account-edit-category"),
+  accountEditDate: document.querySelector("#account-edit-date"),
+  accountEditStatus: document.querySelector("#account-edit-status"),
+  deleteAccountEntryButton: document.querySelector("#delete-account-entry-button"),
+  incomeForm: document.querySelector("#income-form"),
+  incomeAmount: document.querySelector("#income-amount"),
+  incomeComment: document.querySelector("#income-comment"),
+  incomeDate: document.querySelector("#income-date"),
+  incomeStatus: document.querySelector("#income-status"),
+  expensesScreenTotal: document.querySelector("#expenses-screen-total"),
+  openExpenseFormButton: document.querySelector("#open-expense-form-button"),
+  expensesList: document.querySelector("#expenses-list"),
+  expensesEmpty: document.querySelector("#expenses-empty"),
+  expenseForm: document.querySelector("#expense-form"),
+  expenseAmount: document.querySelector("#expense-amount"),
+  expenseComment: document.querySelector("#expense-comment"),
+  expenseCategory: document.querySelector("#expense-category"),
+  expenseDate: document.querySelector("#expense-date"),
+  expenseStatus: document.querySelector("#expense-status"),
   goalForm: document.querySelector("#goal-form"),
   goalTitle: document.querySelector("#goal-title"),
   goalTarget: document.querySelector("#goal-target"),
@@ -86,7 +102,7 @@ const nodes = {
 function loadList(key, fallback) {
   try {
     const saved = JSON.parse(localStorage.getItem(key));
-    return Array.isArray(saved) && saved.length ? saved : fallback;
+    return Array.isArray(saved) ? saved : fallback;
   } catch {
     return fallback;
   }
@@ -95,6 +111,8 @@ function loadList(key, fallback) {
 function saveState() {
   localStorage.setItem(goalsKey, JSON.stringify(state.goals));
   localStorage.setItem(transactionsKey, JSON.stringify(state.transactions));
+  localStorage.setItem(expensesKey, JSON.stringify(state.expenses));
+  localStorage.setItem(accountKey, JSON.stringify(state.accountEntries));
 }
 
 function normalizeTransaction(item) {
@@ -110,10 +128,38 @@ function normalizeTransaction(item) {
   };
 }
 
+function normalizeExpense(item) {
+  const createdAt = item.createdAt || new Date().toISOString();
+  return {
+    id: item.id || crypto.randomUUID(),
+    amount: Number(item.amount) || 0,
+    comment: item.comment || "",
+    category: item.category || defaultExpenseCategory,
+    date: item.date || createdAt.slice(0, 10),
+    createdAt,
+  };
+}
+
+function normalizeAccountEntry(item) {
+  const createdAt = item.createdAt || new Date().toISOString();
+  const type = ["income", "expense", "allocation", "return"].includes(item.type) ? item.type : "income";
+  return {
+    id: item.id || crypto.randomUUID(),
+    type,
+    amount: Number(item.amount) || 0,
+    comment: item.comment || "",
+    category: item.category || (type === "expense" ? defaultExpenseCategory : ""),
+    date: item.date || createdAt.slice(0, 10),
+    goalId: item.goalId || null,
+    linkedId: item.linkedId || null,
+    createdAt,
+  };
+}
+
 function ensureSelectedGoal() {
   if (!state.goals.length) {
-    state.goals = defaultGoals;
-    state.transactions = defaultTransactions.map(normalizeTransaction);
+    state.selectedGoalId = null;
+    return;
   }
 
   if (!state.goals.some((goal) => goal.id === state.selectedGoalId)) {
@@ -123,7 +169,7 @@ function ensureSelectedGoal() {
 
 function selectedGoal() {
   ensureSelectedGoal();
-  return state.goals.find((goal) => goal.id === state.selectedGoalId);
+  return state.goals.find((goal) => goal.id === state.selectedGoalId) || null;
 }
 
 function formatMoney(value) {
@@ -155,7 +201,54 @@ function goalLeft(goal) {
 }
 
 function totalBalance() {
-  return state.goals.reduce((total, goal) => total + goalSaved(goal.id), 0);
+  return state.accountEntries.reduce((total, item) => {
+    if (item.type === "income" || item.type === "return") {
+      return total + item.amount;
+    }
+
+    return total - item.amount;
+  }, 0);
+}
+
+function totalExpenses() {
+  return state.expenses.reduce((total, expense) => total + expense.amount, 0);
+}
+
+function monthKey(date = today()) {
+  return String(date).slice(0, 7);
+}
+
+function currentMonthEntries(items) {
+  const current = monthKey();
+  return items.filter((item) => monthKey(item.date) === current);
+}
+
+function totalSavedInGoals() {
+  return state.goals.reduce((total, goal) => total + Math.max(goalSaved(goal.id), 0), 0);
+}
+
+function clampPercent(value) {
+  return Math.max(0, Math.min(Number(value) || 0, 100));
+}
+
+function categoryColor(category, index = 0) {
+  const colors = {
+    "Еда": "#69d45f",
+    "Транспорт": "#5aa7ff",
+    "Дом": "#ffc857",
+    "Покупки": "#b58cff",
+    "Развлечения": "#ff8ac5",
+    "Здоровье": "#58d6c6",
+    "Другое": "#ff9a8f",
+  };
+  const fallback = ["#69d45f", "#5aa7ff", "#ffc857", "#b58cff", "#ff8ac5", "#58d6c6", "#ff9a8f"];
+  return colors[category] || fallback[index % fallback.length];
+}
+
+function monthName() {
+  const formatter = new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" });
+  const label = formatter.format(new Date(`${monthKey()}-01T12:00:00`));
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 function escapeHtml(value) {
@@ -172,12 +265,24 @@ function showView(view) {
   nodes.screens.forEach((screen) => {
     screen.classList.toggle("is-active", screen.id === `${view}-screen`);
   });
+  nodes.tabButtons.forEach((button) => {
+    const rootView = view === "stats" ? "stats" : "home";
+    button.classList.toggle("is-active", button.dataset.tabView === rootView);
+  });
   clearStatuses();
   render();
 }
 
 function clearStatuses() {
-  [nodes.detailStatus, nodes.operationStatus, nodes.goalStatus].forEach((node) => {
+  [
+    nodes.detailStatus,
+    nodes.operationStatus,
+    nodes.goalStatus,
+    nodes.accountHistoryStatus,
+    nodes.accountEditStatus,
+    nodes.incomeStatus,
+    nodes.expenseStatus,
+  ].forEach((node) => {
     node.hidden = true;
     node.classList.remove("is-error");
     node.textContent = "";
@@ -196,6 +301,8 @@ function today() {
 
 function renderHome() {
   nodes.totalBalance.textContent = formatMoney(totalBalance());
+  nodes.expensesTotal.textContent = formatMoney(totalExpenses());
+  nodes.homeEmpty.hidden = state.goals.length > 0;
   nodes.goalList.innerHTML = state.goals
     .map((goal) => {
       const saved = goalSaved(goal.id);
@@ -229,6 +336,22 @@ function renderHome() {
 
 function renderDetail() {
   const goal = selectedGoal();
+  if (!goal) {
+    nodes.detailHeading.textContent = "Копилка";
+    nodes.detailIcon.textContent = "💰";
+    nodes.detailTitle.textContent = "Нет копилок";
+    nodes.detailTarget.textContent = formatMoney(0);
+    nodes.detailSaved.textContent = formatMoney(0);
+    nodes.detailLeft.textContent = formatMoney(0);
+    nodes.detailPercent.textContent = "0%";
+    nodes.detailProgress.style.width = "0%";
+    nodes.topupButton.disabled = true;
+    nodes.withdrawButton.disabled = true;
+    nodes.historyButton.disabled = true;
+    nodes.deleteGoalButton.disabled = true;
+    return;
+  }
+
   const saved = goalSaved(goal.id);
   const left = goalLeft(goal);
   const progress = goalProgress(goal);
@@ -241,12 +364,15 @@ function renderDetail() {
   nodes.detailLeft.textContent = left ? formatMoney(left) : "Цель достигнута";
   nodes.detailPercent.textContent = `${progress}%`;
   nodes.detailProgress.style.width = `${progress}%`;
-  nodes.deleteGoalButton.disabled = state.goals.length <= 1;
+  nodes.topupButton.disabled = false;
+  nodes.withdrawButton.disabled = false;
+  nodes.historyButton.disabled = false;
+  nodes.deleteGoalButton.disabled = false;
 }
 
 function renderOperation() {
   const goal = selectedGoal();
-  nodes.operationGoalName.textContent = goal.title;
+  nodes.operationGoalName.textContent = goal ? goal.title : "Нет копилки";
   nodes.operationDate.value = nodes.operationDate.value || today();
   nodes.operationTypeButtons.forEach((button) => {
     button.classList.toggle("is-active", button.dataset.operationType === state.operationType);
@@ -255,6 +381,13 @@ function renderOperation() {
 
 function renderHistory() {
   const goal = selectedGoal();
+  if (!goal) {
+    nodes.historyGoalName.textContent = "Копилка";
+    nodes.historyEmpty.hidden = false;
+    nodes.historyList.innerHTML = "";
+    return;
+  }
+
   const items = state.transactions
     .filter((item) => item.goalId === goal.id)
     .slice()
@@ -271,7 +404,10 @@ function renderHistory() {
           <div>
             <div class="history-title">${escapeHtml(title)}</div>
             <div class="history-meta">${formatDate(item.date)}</div>
-            <button class="delete-operation-button" type="button" data-delete-operation="${item.id}">Удалить</button>
+            <div class="history-actions">
+              <button class="edit-operation-button" type="button" data-edit-linked-entry="${item.id}">Редактировать</button>
+              <button class="delete-operation-button" type="button" data-delete-operation="${item.id}">Удалить</button>
+            </div>
           </div>
           <div class="history-amount ${item.type}">${sign}${formatMoney(item.amount)}</div>
         </li>
@@ -282,6 +418,163 @@ function renderHistory() {
   nodes.historyList.querySelectorAll("[data-delete-operation]").forEach((button) => {
     button.addEventListener("click", () => deleteOperation(button.dataset.deleteOperation));
   });
+
+  nodes.historyList.querySelectorAll("[data-edit-linked-entry]").forEach((button) => {
+    button.addEventListener("click", () => openAccountEntryEditorByLinkedId(button.dataset.editLinkedEntry));
+  });
+}
+
+function renderExpenses() {
+  const items = state.expenses
+    .slice()
+    .sort((a, b) => `${b.date}${b.createdAt}`.localeCompare(`${a.date}${a.createdAt}`));
+
+  nodes.expensesScreenTotal.textContent = formatMoney(totalExpenses());
+  nodes.expensesEmpty.hidden = items.length > 0;
+  nodes.expensesList.innerHTML = items
+    .map((item) => {
+      const title = item.comment || "Расход";
+      return `
+        <li class="history-item">
+          <div>
+            <div class="history-title">${escapeHtml(title)}</div>
+            <div class="history-meta">${escapeHtml(item.category || defaultExpenseCategory)} · ${formatDate(item.date)}</div>
+            <div class="history-actions">
+              <button class="edit-operation-button" type="button" data-edit-linked-entry="${item.id}">Редактировать</button>
+              <button class="delete-operation-button" type="button" data-delete-expense="${item.id}">Удалить</button>
+            </div>
+          </div>
+          <div class="history-amount withdraw">-${formatMoney(item.amount)}</div>
+        </li>
+      `;
+    })
+    .join("");
+
+  nodes.expensesList.querySelectorAll("[data-delete-expense]").forEach((button) => {
+    button.addEventListener("click", () => deleteExpense(button.dataset.deleteExpense));
+  });
+
+  nodes.expensesList.querySelectorAll("[data-edit-linked-entry]").forEach((button) => {
+    button.addEventListener("click", () => openAccountEntryEditorByLinkedId(button.dataset.editLinkedEntry));
+  });
+}
+
+function renderStatistics() {
+  const monthAccountEntries = currentMonthEntries(state.accountEntries);
+  const monthExpenses = currentMonthEntries(state.expenses);
+  const income = monthAccountEntries
+    .filter((item) => item.type === "income")
+    .reduce((total, item) => total + item.amount, 0);
+  const spent = monthExpenses.reduce((total, item) => total + item.amount, 0);
+  const categoryTotals = monthExpenses.reduce((result, item) => {
+    const category = item.category || defaultExpenseCategory;
+    result[category] = (result[category] || 0) + item.amount;
+    return result;
+  }, {});
+  const categoryItems = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+  const scaleMax = Math.max(income, spent, 1);
+  const totalScalePercent = clampPercent((spent / scaleMax) * 100);
+  const spentIncomePercent = income ? Math.round((spent / income) * 100) : spent ? 100 : 0;
+
+  nodes.statsIncome.textContent = formatMoney(income);
+  nodes.statsExpenses.textContent = formatMoney(spent);
+  nodes.statsSaved.textContent = formatMoney(totalSavedInGoals());
+  nodes.statsBalance.textContent = formatMoney(totalBalance());
+  nodes.statsExpenseMonth.textContent = monthName();
+  nodes.statsExpenseScaleTotal.textContent = formatMoney(spent);
+  nodes.statsExpenseScaleNote.textContent = income
+    ? `${spentIncomePercent}% от дохода`
+    : spent
+      ? "Доходов нет"
+      : "Расходов нет";
+  nodes.statsExpenseScaleMax.textContent = income ? `Доход ${formatMoney(income)}` : `Расход ${formatMoney(spent)}`;
+  nodes.statsExpenseScaleFill.style.width = `${totalScalePercent}%`;
+  nodes.statsExpenseScaleFill.innerHTML = categoryItems
+    .map(([category, amount], index) => {
+      const segmentPercent = spent ? (amount / spent) * 100 : 0;
+      return `<span class="expense-scale-segment" style="flex-basis: ${segmentPercent}%; --category-color: ${categoryColor(category, index)}"></span>`;
+    })
+    .join("");
+  nodes.statsEmpty.hidden = categoryItems.length > 0;
+  nodes.statsCategoryList.innerHTML = categoryItems
+    .map(([category, amount], index) => {
+      const percent = spent ? Math.round((amount / spent) * 100) : 0;
+      return `
+        <div class="category-row" style="--category-color: ${categoryColor(category, index)}">
+          <div class="category-row-header">
+            <strong>${escapeHtml(category)}</strong>
+            <span>${formatMoney(amount)} · ${percent}%</span>
+          </div>
+          <div class="category-track">
+            <span class="category-fill" style="width: ${percent}%"></span>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function accountEntryTitle(item) {
+  if (item.comment) return item.comment;
+
+  if (item.type === "income") return "Доход";
+  if (item.type === "expense") return "Расход";
+  if (item.type === "allocation") return "В копилку";
+  return "Возврат на счет";
+}
+
+function accountEntrySign(item) {
+  return item.type === "income" || item.type === "return" ? "+" : "-";
+}
+
+function accountEntryMeta(item) {
+  const parts = [accountEntryTypeLabel(item)];
+  if (item.type === "expense") {
+    parts.push(item.category || defaultExpenseCategory);
+  }
+  parts.push(formatDate(item.date));
+  return parts.join(" · ");
+}
+
+function accountEntryTypeLabel(item) {
+  if (item.type === "income") return "Доход";
+  if (item.type === "expense") return "Расход";
+  if (item.type === "allocation") return "Распределение в копилку";
+  return "Возврат на счет";
+}
+
+function renderAccountHistory() {
+  const items = state.accountEntries
+    .slice()
+    .sort((a, b) => `${b.date}${b.createdAt}`.localeCompare(`${a.date}${a.createdAt}`));
+
+  nodes.accountHistoryBalance.textContent = formatMoney(totalBalance());
+  nodes.accountHistoryEmpty.hidden = items.length > 0;
+  nodes.accountHistoryList.innerHTML = items
+    .map((item) => {
+      return `
+        <li class="history-item">
+          <div>
+            <div class="history-title">${escapeHtml(accountEntryTitle(item))}</div>
+            <div class="history-meta">${escapeHtml(accountEntryMeta(item))}</div>
+            <div class="history-actions">
+              <button class="edit-operation-button" type="button" data-edit-account-entry="${item.id}">Редактировать</button>
+              <button class="delete-operation-button" type="button" data-delete-account-entry="${item.id}">Удалить</button>
+            </div>
+          </div>
+          <div class="history-amount ${item.type}">${accountEntrySign(item)}${formatMoney(item.amount)}</div>
+        </li>
+      `;
+    })
+    .join("");
+
+  nodes.accountHistoryList.querySelectorAll("[data-edit-account-entry]").forEach((button) => {
+    button.addEventListener("click", () => openAccountEntryEditor(button.dataset.editAccountEntry));
+  });
+
+  nodes.accountHistoryList.querySelectorAll("[data-delete-account-entry]").forEach((button) => {
+    button.addEventListener("click", () => deleteAccountEntry(button.dataset.deleteAccountEntry, nodes.accountHistoryStatus));
+  });
 }
 
 function render() {
@@ -290,6 +583,9 @@ function render() {
   renderDetail();
   renderOperation();
   renderHistory();
+  renderExpenses();
+  renderStatistics();
+  renderAccountHistory();
 }
 
 function formatDate(date) {
@@ -300,21 +596,167 @@ function formatDate(date) {
   });
 }
 
+function signedAccountAmount(entry, amount = entry.amount) {
+  return entry.type === "income" || entry.type === "return" ? amount : -amount;
+}
+
+function projectedBalance(entry, amount) {
+  return totalBalance() - signedAccountAmount(entry) + signedAccountAmount(entry, amount);
+}
+
+function projectedGoalSaved(entry, amount) {
+  if (!entry.goalId || !["allocation", "return"].includes(entry.type)) {
+    return null;
+  }
+
+  const currentSaved = goalSaved(entry.goalId);
+  const oldEffect = entry.type === "allocation" ? entry.amount : -entry.amount;
+  const newEffect = entry.type === "allocation" ? amount : -amount;
+  return currentSaved - oldEffect + newEffect;
+}
+
+function validateAccountEntryChange(entry, amount) {
+  if (projectedBalance(entry, amount) < 0) {
+    return "После изменения общий счет уйдет в минус. Сначала исправьте другие записи.";
+  }
+
+  const saved = projectedGoalSaved(entry, amount);
+  if (saved !== null && saved < 0) {
+    return "После изменения в копилке получится отрицательная сумма. Такую запись нельзя сохранить.";
+  }
+
+  return "";
+}
+
+function syncLinkedAccountEntry(entry) {
+  if (entry.type === "expense") {
+    const expense = state.expenses.find((item) => item.id === entry.linkedId);
+    if (!expense) return;
+
+    expense.amount = entry.amount;
+    expense.comment = entry.comment;
+    expense.category = entry.category || defaultExpenseCategory;
+    expense.date = entry.date;
+    return;
+  }
+
+  if (!["allocation", "return"].includes(entry.type)) return;
+
+  const transaction = state.transactions.find((item) => item.id === entry.linkedId);
+  if (!transaction) return;
+
+  transaction.amount = entry.amount;
+  transaction.comment = entry.comment;
+  transaction.date = entry.date;
+}
+
+function openAccountEntryEditor(entryId) {
+  const entry = state.accountEntries.find((item) => item.id === entryId);
+  if (!entry) return;
+
+  state.editingAccountEntryId = entry.id;
+  nodes.accountEditType.textContent = accountEntryTypeLabel(entry);
+  nodes.accountEditAmount.value = entry.amount;
+  nodes.accountEditComment.value = entry.comment;
+  nodes.accountEditCategoryLabel.hidden = entry.type !== "expense";
+  nodes.accountEditCategory.value = entry.category || defaultExpenseCategory;
+  nodes.accountEditDate.value = entry.date;
+  showView("account-edit");
+}
+
+function openAccountEntryEditorByLinkedId(linkedId) {
+  const entry = state.accountEntries.find((item) => item.linkedId === linkedId);
+  if (!entry) return;
+
+  openAccountEntryEditor(entry.id);
+}
+
+function saveAccountEntryEdit(event) {
+  event.preventDefault();
+  const entry = state.accountEntries.find((item) => item.id === state.editingAccountEntryId);
+  if (!entry) {
+    showView("account-history");
+    return;
+  }
+
+  const amount = parseAmount(nodes.accountEditAmount.value);
+  if (!amount) {
+    showStatus(nodes.accountEditStatus, "Введите сумму больше нуля.", true);
+    nodes.accountEditAmount.focus();
+    return;
+  }
+
+  const validationMessage = validateAccountEntryChange(entry, amount);
+  if (validationMessage) {
+    showStatus(nodes.accountEditStatus, validationMessage, true);
+    return;
+  }
+
+  entry.amount = amount;
+  entry.comment = nodes.accountEditComment.value.trim();
+  entry.category = entry.type === "expense" ? nodes.accountEditCategory.value : "";
+  entry.date = nodes.accountEditDate.value || today();
+  syncLinkedAccountEntry(entry);
+  saveState();
+  notifyTelegramSave();
+  showView("account-history");
+}
+
 function openOperation(type) {
+  if (!selectedGoal()) {
+    showView("create");
+    return;
+  }
+
   state.operationType = type;
   nodes.operationForm.reset();
   nodes.operationDate.value = today();
   showView("operation");
 }
 
+function openIncomeForm() {
+  nodes.incomeForm.reset();
+  nodes.incomeDate.value = today();
+  showView("income");
+}
+
+function openExpenseForm() {
+  nodes.expenseForm.reset();
+  nodes.expenseCategory.value = defaultExpenseCategory;
+  nodes.expenseDate.value = today();
+  showView("expense-form");
+}
+
+function applyQuickAmount(button) {
+  const input = document.querySelector(`#${button.dataset.quickTarget}`);
+  if (!input) return;
+
+  const current = parseAmount(input.value) || 0;
+  const amount = Number(button.dataset.quickAmount) || 0;
+  input.value = current + amount;
+  input.focus();
+}
+
 function createOperation(event) {
   event.preventDefault();
   const goal = selectedGoal();
+  if (!goal) {
+    showStatus(nodes.operationStatus, "Сначала создайте копилку.", true);
+    return;
+  }
+
   const amount = parseAmount(nodes.operationAmount.value);
   const saved = goalSaved(goal.id);
+  const account = totalBalance();
 
   if (!amount) {
     showStatus(nodes.operationStatus, "Введите сумму больше нуля.", true);
+    nodes.operationAmount.focus();
+    return;
+  }
+
+  if (state.operationType === "topup" && amount > account) {
+    showStatus(nodes.operationStatus, "На общем счете недостаточно денег для пополнения копилки.", true);
     nodes.operationAmount.focus();
     return;
   }
@@ -336,9 +778,48 @@ function createOperation(event) {
   };
 
   state.transactions.push(transaction);
+  state.accountEntries.push({
+    id: crypto.randomUUID(),
+    type: state.operationType === "topup" ? "allocation" : "return",
+    amount,
+    comment:
+      state.operationType === "topup"
+        ? `В копилку: ${goal.title}`
+        : `Из копилки: ${goal.title}`,
+    date: transaction.date,
+    goalId: goal.id,
+    linkedId: transaction.id,
+    createdAt: new Date().toISOString(),
+  });
   saveState();
   notifyTelegramSave();
   showView("history");
+}
+
+function createIncome(event) {
+  event.preventDefault();
+  const amount = parseAmount(nodes.incomeAmount.value);
+
+  if (!amount) {
+    showStatus(nodes.incomeStatus, "Введите сумму дохода больше нуля.", true);
+    nodes.incomeAmount.focus();
+    return;
+  }
+
+  state.accountEntries.push({
+    id: crypto.randomUUID(),
+    type: "income",
+    amount,
+    comment: nodes.incomeComment.value.trim(),
+    date: nodes.incomeDate.value || today(),
+    goalId: null,
+    linkedId: null,
+    createdAt: new Date().toISOString(),
+  });
+
+  saveState();
+  notifyTelegramSave();
+  showView("home");
 }
 
 function createGoal(event) {
@@ -372,25 +853,118 @@ function createGoal(event) {
   showView("detail");
 }
 
+function createExpense(event) {
+  event.preventDefault();
+  const amount = parseAmount(nodes.expenseAmount.value);
+
+  if (!amount) {
+    showStatus(nodes.expenseStatus, "Введите сумму расхода больше нуля.", true);
+    nodes.expenseAmount.focus();
+    return;
+  }
+
+  if (amount > totalBalance()) {
+    showStatus(nodes.expenseStatus, "На общем счете недостаточно денег для этого расхода.", true);
+    nodes.expenseAmount.focus();
+    return;
+  }
+
+  const expense = {
+    id: crypto.randomUUID(),
+    amount,
+    comment: nodes.expenseComment.value.trim(),
+    category: nodes.expenseCategory.value || defaultExpenseCategory,
+    date: nodes.expenseDate.value || today(),
+    createdAt: new Date().toISOString(),
+  };
+
+  state.expenses.push(expense);
+  state.accountEntries.push({
+    id: crypto.randomUUID(),
+    type: "expense",
+    amount,
+    comment: expense.comment || "Расход",
+    category: expense.category,
+    date: expense.date,
+    goalId: null,
+    linkedId: expense.id,
+    createdAt: new Date().toISOString(),
+  });
+
+  saveState();
+  notifyTelegramSave();
+  showView("home");
+}
+
 function deleteSelectedGoal() {
   const goal = selectedGoal();
-
-  if (state.goals.length <= 1) {
-    showStatus(nodes.detailStatus, "Нельзя удалить последнюю копилку.", true);
+  if (!goal) {
+    showView("home");
     return;
+  }
+
+  const saved = goalSaved(goal.id);
+  if (saved > 0) {
+    state.accountEntries.push({
+      id: crypto.randomUUID(),
+      type: "return",
+      amount: saved,
+      comment: `Удаление копилки: ${goal.title}`,
+      date: today(),
+      goalId: goal.id,
+      linkedId: null,
+      createdAt: new Date().toISOString(),
+    });
   }
 
   state.goals = state.goals.filter((item) => item.id !== goal.id);
   state.transactions = state.transactions.filter((item) => item.goalId !== goal.id);
-  state.selectedGoalId = state.goals[0].id;
+  state.selectedGoalId = state.goals[0]?.id || null;
   saveState();
   showView("home");
 }
 
 function deleteOperation(operationId) {
   state.transactions = state.transactions.filter((item) => item.id !== operationId);
+  state.accountEntries = state.accountEntries.filter((item) => item.linkedId !== operationId);
   saveState();
   render();
+}
+
+function deleteExpense(expenseId) {
+  state.expenses = state.expenses.filter((item) => item.id !== expenseId);
+  state.accountEntries = state.accountEntries.filter((item) => item.linkedId !== expenseId);
+  saveState();
+  render();
+}
+
+function deleteAccountEntry(entryId, statusNode = nodes.accountEditStatus) {
+  const entry = state.accountEntries.find((item) => item.id === entryId);
+  if (!entry) {
+    showView("account-history");
+    return;
+  }
+
+  const validationMessage = validateAccountEntryChange(entry, 0);
+  if (validationMessage) {
+    showStatus(statusNode, validationMessage, true);
+    return;
+  }
+
+  state.accountEntries = state.accountEntries.filter((item) => item.id !== entry.id);
+
+  if (entry.type === "expense") {
+    state.expenses = state.expenses.filter((item) => item.id !== entry.linkedId);
+  }
+
+  if (entry.type === "allocation" || entry.type === "return") {
+    state.transactions = state.transactions.filter((item) => item.id !== entry.linkedId);
+  }
+
+  state.editingAccountEntryId = null;
+  saveState();
+  notifyTelegramSave();
+  showView("account-history");
 }
 
 function notifyTelegramSave() {
@@ -410,9 +984,19 @@ nodes.openCreateButton.addEventListener("click", () => {
   nodes.goalForm.reset();
   showView("create");
 });
+nodes.openAccountHistoryButton.addEventListener("click", () => showView("account-history"));
+nodes.openIncomeButton.addEventListener("click", openIncomeForm);
+nodes.openExpensesButton.addEventListener("click", openExpenseForm);
+nodes.tabButtons.forEach((button) => {
+  button.addEventListener("click", () => showView(button.dataset.tabView));
+});
+nodes.quickAmountButtons.forEach((button) => {
+  button.addEventListener("click", () => applyQuickAmount(button));
+});
 nodes.navButtons.forEach((button) => {
   button.addEventListener("click", () => showView(button.dataset.nav));
 });
+nodes.openExpenseFormButton.addEventListener("click", openExpenseForm);
 nodes.topupButton.addEventListener("click", () => openOperation("topup"));
 nodes.withdrawButton.addEventListener("click", () => openOperation("withdraw"));
 nodes.historyButton.addEventListener("click", () => showView("history"));
@@ -424,6 +1008,10 @@ nodes.operationTypeButtons.forEach((button) => {
   });
 });
 nodes.operationForm.addEventListener("submit", createOperation);
+nodes.accountEditForm.addEventListener("submit", saveAccountEntryEdit);
+nodes.deleteAccountEntryButton.addEventListener("click", () => deleteAccountEntry(state.editingAccountEntryId));
+nodes.incomeForm.addEventListener("submit", createIncome);
+nodes.expenseForm.addEventListener("submit", createExpense);
 nodes.goalForm.addEventListener("submit", createGoal);
 
 applyTelegramTheme();

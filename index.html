@@ -19,12 +19,85 @@
         </header>
 
         <section class="balance-card">
-          <span class="muted-label">Общий баланс</span>
+          <span class="muted-label">Общий счет</span>
           <strong id="total-balance">0 ₸</strong>
-          <p>Сумма накоплений по всем активным целям</p>
+          <p>Деньги, которые можно распределить по копилкам или потратить</p>
+          <button class="account-history-button" id="open-account-history-button" type="button">История счета</button>
+        </section>
+
+        <section class="quick-actions">
+          <button class="income-card" id="open-income-button" type="button">
+            <span>
+              <span class="muted-label">Доход</span>
+              <strong>Пополнить счет</strong>
+            </span>
+            <span class="income-icon">+</span>
+          </button>
+
+          <button class="expense-card" id="open-expenses-button" type="button">
+            <span>
+              <span class="muted-label">Расходы</span>
+              <strong id="expenses-total">0 ₸</strong>
+            </span>
+            <span class="expense-icon">−</span>
+          </button>
         </section>
 
         <section class="goal-list" id="goal-list" aria-label="Список копилок"></section>
+        <p class="empty-state" id="home-empty">Копилок пока нет. Нажмите “+” и создайте первую цель для накоплений.</p>
+      </section>
+
+      <section class="screen" id="stats-screen" aria-label="Статистика">
+        <header class="app-header simple-header">
+          <h1>Статистика</h1>
+        </header>
+
+        <section class="stats-grid">
+          <article class="stat-card">
+            <span class="muted-label">Доходы</span>
+            <strong id="stats-income">0 ₸</strong>
+          </article>
+          <article class="stat-card">
+            <span class="muted-label">Расходы</span>
+            <strong class="danger-text" id="stats-expenses">0 ₸</strong>
+          </article>
+          <article class="stat-card">
+            <span class="muted-label">В копилках</span>
+            <strong id="stats-saved">0 ₸</strong>
+          </article>
+          <article class="stat-card">
+            <span class="muted-label">На счете</span>
+            <strong id="stats-balance">0 ₸</strong>
+          </article>
+        </section>
+
+        <section class="panel stats-panel">
+          <div class="section-title-row">
+            <h2>Расходы по категориям</h2>
+            <span id="stats-expense-month">Этот месяц</span>
+          </div>
+
+          <div class="expense-overview">
+            <div class="expense-overview-header">
+              <div>
+                <span class="muted-label">Общий расход</span>
+                <strong id="stats-expense-scale-total">0 ₸</strong>
+              </div>
+              <span id="stats-expense-scale-note">0% от дохода</span>
+            </div>
+            <div class="expense-scale-track">
+              <div class="expense-scale-fill" id="stats-expense-scale-fill"></div>
+            </div>
+            <div class="expense-scale-caption">
+              <span>0 ₸</span>
+              <span id="stats-expense-scale-max">Доход 0 ₸</span>
+            </div>
+          </div>
+
+          <h3 class="category-subtitle">Разрез расходов</h3>
+          <div class="category-list" id="stats-category-list"></div>
+          <p class="empty-state compact-empty" id="stats-empty">В этом месяце расходов пока нет.</p>
+        </section>
       </section>
 
       <section class="screen" id="detail-screen" aria-label="Выбранная копилка">
@@ -102,6 +175,13 @@
             <input id="operation-amount" inputmode="decimal" name="amount" placeholder="Например 20000" required />
           </label>
 
+          <div class="quick-amounts" aria-label="Быстрые суммы">
+            <button type="button" data-quick-amount="1000" data-quick-target="operation-amount">1к</button>
+            <button type="button" data-quick-amount="2000" data-quick-target="operation-amount">2к</button>
+            <button type="button" data-quick-amount="5000" data-quick-target="operation-amount">5к</button>
+            <button type="button" data-quick-amount="10000" data-quick-target="operation-amount">10к</button>
+          </div>
+
           <label>
             <span>Комментарий</span>
             <input id="operation-comment" name="comment" maxlength="80" placeholder="Зарплата, бонус, покупка..." />
@@ -130,6 +210,183 @@
 
         <ul class="history-list" id="history-list"></ul>
         <p class="empty-state" id="history-empty">Операций пока нет. Пополните копилку или сделайте снятие.</p>
+      </section>
+
+      <section class="screen" id="account-history-screen" aria-label="История общего счета">
+        <header class="app-header">
+          <button class="icon-button" data-nav="home" type="button" aria-label="Назад">‹</button>
+          <h1>История счета</h1>
+          <span class="header-spacer"></span>
+        </header>
+
+        <section class="balance-card account-history-summary">
+          <span class="muted-label">Текущий остаток</span>
+          <strong id="account-history-balance">0 ₸</strong>
+          <p>Доходы, расходы, распределения по копилкам и возвраты</p>
+        </section>
+
+        <ul class="history-list" id="account-history-list"></ul>
+        <p class="empty-state" id="account-history-empty">Движений по счету пока нет. Добавьте доход, расход или распределите деньги в копилку.</p>
+        <p class="status-message" id="account-history-status" hidden></p>
+      </section>
+
+      <section class="screen" id="account-edit-screen" aria-label="Редактирование записи">
+        <header class="app-header">
+          <button class="icon-button" data-nav="account-history" type="button" aria-label="Назад">‹</button>
+          <h1>Редактировать</h1>
+          <span class="header-spacer"></span>
+        </header>
+
+        <form class="panel form-panel" id="account-edit-form">
+          <div class="form-context">
+            <span class="muted-label">Запись</span>
+            <strong id="account-edit-type">Операция</strong>
+          </div>
+
+          <label>
+            <span>Сумма</span>
+            <input id="account-edit-amount" inputmode="decimal" name="amount" placeholder="Например 250000" required />
+          </label>
+
+          <div class="quick-amounts" aria-label="Быстрые суммы">
+            <button type="button" data-quick-amount="1000" data-quick-target="account-edit-amount">1к</button>
+            <button type="button" data-quick-amount="2000" data-quick-target="account-edit-amount">2к</button>
+            <button type="button" data-quick-amount="5000" data-quick-target="account-edit-amount">5к</button>
+            <button type="button" data-quick-amount="10000" data-quick-target="account-edit-amount">10к</button>
+          </div>
+
+          <label>
+            <span>Комментарий</span>
+            <input id="account-edit-comment" name="comment" maxlength="80" placeholder="Зарплата, кафе, перевод..." />
+          </label>
+
+          <label id="account-edit-category-label">
+            <span>Категория</span>
+            <select id="account-edit-category" name="category">
+              <option value="Еда">Еда</option>
+              <option value="Транспорт">Транспорт</option>
+              <option value="Дом">Дом</option>
+              <option value="Покупки">Покупки</option>
+              <option value="Развлечения">Развлечения</option>
+              <option value="Здоровье">Здоровье</option>
+              <option value="Другое">Другое</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Дата</span>
+            <input id="account-edit-date" name="date" type="date" required />
+          </label>
+
+          <button class="primary-button wide-button" type="submit">Сохранить изменения</button>
+          <button class="danger-button wide-button" id="delete-account-entry-button" type="button">Удалить запись</button>
+        </form>
+
+        <p class="status-message" id="account-edit-status" hidden></p>
+      </section>
+
+      <section class="screen" id="income-screen" aria-label="Пополнение счета">
+        <header class="app-header">
+          <button class="icon-button" data-nav="home" type="button" aria-label="Назад">‹</button>
+          <h1>Пополнить счет</h1>
+          <span class="header-spacer"></span>
+        </header>
+
+        <form class="panel form-panel" id="income-form">
+          <label>
+            <span>Сумма</span>
+            <input id="income-amount" inputmode="decimal" name="amount" placeholder="Например 250000" required />
+          </label>
+
+          <div class="quick-amounts" aria-label="Быстрые суммы">
+            <button type="button" data-quick-amount="1000" data-quick-target="income-amount">1к</button>
+            <button type="button" data-quick-amount="2000" data-quick-target="income-amount">2к</button>
+            <button type="button" data-quick-amount="5000" data-quick-target="income-amount">5к</button>
+            <button type="button" data-quick-amount="10000" data-quick-target="income-amount">10к</button>
+          </div>
+
+          <label>
+            <span>Комментарий</span>
+            <input id="income-comment" name="comment" maxlength="80" placeholder="Зарплата, аванс, перевод..." />
+          </label>
+
+          <label>
+            <span>Дата</span>
+            <input id="income-date" name="date" type="date" required />
+          </label>
+
+          <button class="primary-button wide-button" type="submit">Зачислить на счет</button>
+        </form>
+
+        <p class="status-message" id="income-status" hidden></p>
+      </section>
+
+      <section class="screen" id="expenses-screen" aria-label="Расходы">
+        <header class="app-header">
+          <button class="icon-button" data-nav="home" type="button" aria-label="Назад">‹</button>
+          <h1>Расходы</h1>
+          <span class="header-spacer"></span>
+        </header>
+
+        <section class="balance-card expense-summary">
+          <span class="muted-label">Всего потрачено</span>
+          <strong id="expenses-screen-total">0 ₸</strong>
+          <p>Обычные расходы, не связанные с копилками</p>
+        </section>
+
+        <button class="danger-button wide-button" id="open-expense-form-button" type="button">+ Добавить расход</button>
+
+        <ul class="history-list" id="expenses-list"></ul>
+        <p class="empty-state" id="expenses-empty">Расходов пока нет. Добавьте первый расход, чтобы вести учет трат.</p>
+      </section>
+
+      <section class="screen" id="expense-form-screen" aria-label="Новый расход">
+        <header class="app-header">
+          <button class="icon-button" data-nav="home" type="button" aria-label="Назад">‹</button>
+          <h1>Новый расход</h1>
+          <span class="header-spacer"></span>
+        </header>
+
+        <form class="panel form-panel" id="expense-form">
+          <label>
+            <span>Сумма</span>
+            <input id="expense-amount" inputmode="decimal" name="amount" placeholder="Например 5000" required />
+          </label>
+
+          <div class="quick-amounts" aria-label="Быстрые суммы">
+            <button type="button" data-quick-amount="1000" data-quick-target="expense-amount">1к</button>
+            <button type="button" data-quick-amount="2000" data-quick-target="expense-amount">2к</button>
+            <button type="button" data-quick-amount="5000" data-quick-target="expense-amount">5к</button>
+            <button type="button" data-quick-amount="10000" data-quick-target="expense-amount">10к</button>
+          </div>
+
+          <label>
+            <span>Комментарий</span>
+            <input id="expense-comment" name="comment" maxlength="80" placeholder="Кафе, такси, продукты..." />
+          </label>
+
+          <label>
+            <span>Категория</span>
+            <select id="expense-category" name="category">
+              <option value="Еда">Еда</option>
+              <option value="Транспорт">Транспорт</option>
+              <option value="Дом">Дом</option>
+              <option value="Покупки">Покупки</option>
+              <option value="Развлечения">Развлечения</option>
+              <option value="Здоровье">Здоровье</option>
+              <option value="Другое">Другое</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Дата</span>
+            <input id="expense-date" name="date" type="date" required />
+          </label>
+
+          <button class="danger-button wide-button" type="submit">Сохранить расход</button>
+        </form>
+
+        <p class="status-message" id="expense-status" hidden></p>
       </section>
 
       <section class="screen" id="create-screen" aria-label="Создание копилки">
@@ -169,6 +426,17 @@
         <p class="status-message" id="goal-status" hidden></p>
       </section>
     </main>
+
+    <nav class="bottom-nav" aria-label="Основная навигация">
+      <button class="bottom-nav-button is-active" type="button" data-tab-view="home">
+        <span>⌂</span>
+        Главная
+      </button>
+      <button class="bottom-nav-button" type="button" data-tab-view="stats">
+        <span>▥</span>
+        Статистика
+      </button>
+    </nav>
 
     <script src="./app.js"></script>
   </body>
