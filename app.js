@@ -5,6 +5,12 @@ const transactionsKey = "kopilka.transactions.v4";
 const expensesKey = "kopilka.expenses.v2";
 const accountKey = "kopilka.account.v1";
 const remindersKey = "kopilka.reminders.v1";
+const currencyKey = "kopilka.currency.v1";
+const currencies = {
+  KZT: { symbol: "₸", locale: "ru-RU" },
+  RUB: { symbol: "₽", locale: "ru-RU" },
+  USD: { symbol: "$", locale: "en-US" },
+};
 const defaultExpenseCategory = "Еда";
 
 const state = {
@@ -17,6 +23,7 @@ const state = {
   expenses: loadList(expensesKey, []).map(normalizeExpense),
   accountEntries: loadList(accountKey, []).map(normalizeAccountEntry),
   reminders: loadList(remindersKey, []).map(normalizeReminder),
+  currency: loadCurrency(),
 };
 
 const nodes = {
@@ -53,6 +60,7 @@ const nodes = {
   reminderStatus: document.querySelector("#reminder-status"),
   clearDataButton: document.querySelector("#clear-data-button"),
   moreStatus: document.querySelector("#more-status"),
+  currencySelect: document.querySelector("#currency-select"),
   detailHeading: document.querySelector("#detail-heading"),
   detailIcon: document.querySelector("#detail-icon"),
   detailTitle: document.querySelector("#detail-title"),
@@ -127,6 +135,12 @@ function saveState() {
   localStorage.setItem(expensesKey, JSON.stringify(state.expenses));
   localStorage.setItem(accountKey, JSON.stringify(state.accountEntries));
   localStorage.setItem(remindersKey, JSON.stringify(state.reminders));
+  localStorage.setItem(currencyKey, state.currency);
+}
+
+function loadCurrency() {
+  const saved = localStorage.getItem(currencyKey);
+  return currencies[saved] ? saved : "KZT";
 }
 
 function normalizeTransaction(item) {
@@ -199,10 +213,11 @@ function selectedGoal() {
 }
 
 function formatMoney(value) {
+  const currency = currencies[state.currency] || currencies.KZT;
   const formatted = new Intl.NumberFormat("ru-RU", {
     maximumFractionDigits: 0,
   }).format(Math.max(Number(value) || 0, 0));
-  return `${formatted} ₸`;
+  return `${formatted} ${currency.symbol}`;
 }
 
 function parseAmount(value) {
@@ -265,15 +280,15 @@ function clampPercent(value) {
 
 function categoryColor(category, index = 0) {
   const colors = {
-    "Еда": "#69d45f",
-    "Транспорт": "#5aa7ff",
-    "Дом": "#ffc857",
-    "Покупки": "#b58cff",
-    "Развлечения": "#ff8ac5",
-    "Здоровье": "#58d6c6",
-    "Другое": "#ff9a8f",
+    "Еда": "#0a8dff",
+    "Транспорт": "#f7c948",
+    "Дом": "#22c55e",
+    "Покупки": "#8b5cf6",
+    "Развлечения": "#ff8a1f",
+    "Здоровье": "#14b8a6",
+    "Другое": "#64748b",
   };
-  const fallback = ["#69d45f", "#5aa7ff", "#ffc857", "#b58cff", "#ff8ac5", "#58d6c6", "#ff9a8f"];
+  const fallback = ["#0a8dff", "#f7c948", "#22c55e", "#8b5cf6", "#ff8a1f", "#14b8a6", "#64748b"];
   return colors[category] || fallback[index % fallback.length];
 }
 
@@ -682,6 +697,9 @@ function render() {
   renderStatistics();
   renderReminders();
   renderAccountHistory();
+  if (nodes.currencySelect) {
+    nodes.currencySelect.value = state.currency;
+  }
 }
 
 function formatDate(date) {
@@ -1104,11 +1122,13 @@ function clearAllData() {
   state.expenses = [];
   state.accountEntries = [];
   state.reminders = [];
+  state.currency = "KZT";
   localStorage.removeItem(goalsKey);
   localStorage.removeItem(transactionsKey);
   localStorage.removeItem(expensesKey);
   localStorage.removeItem(accountKey);
   localStorage.removeItem(remindersKey);
+  localStorage.removeItem(currencyKey);
   saveState();
   showStatus(nodes.moreStatus, "Данные очищены.");
   render();
@@ -1168,6 +1188,11 @@ nodes.expenseForm.addEventListener("submit", createExpense);
 nodes.reminderForm.addEventListener("submit", createReminder);
 nodes.clearDataButton.addEventListener("click", clearAllData);
 nodes.goalForm.addEventListener("submit", createGoal);
+nodes.currencySelect?.addEventListener("change", () => {
+  state.currency = currencies[nodes.currencySelect.value] ? nodes.currencySelect.value : "KZT";
+  saveState();
+  render();
+});
 
 applyTelegramTheme();
 ensureSelectedGoal();
