@@ -146,6 +146,86 @@
         <p class="status-message" id="reminder-status" hidden></p>
       </section>
 
+      <section class="screen" id="more-screen" aria-label="Еще">
+        <header class="app-header simple-header">
+          <h1>Еще</h1>
+        </header>
+
+        <section class="panel more-panel">
+          <button class="more-row" type="button" data-nav="privacy">
+            <span>
+              <strong>Политика конфиденциальности</strong>
+              <small>Как хранятся и используются данные</small>
+            </span>
+            <b>›</b>
+          </button>
+
+          <button class="more-row" type="button" data-nav="terms">
+            <span>
+              <strong>Пользовательское соглашение</strong>
+              <small>Правила использования Копилки</small>
+            </span>
+            <b>›</b>
+          </button>
+
+          <button class="more-row danger-row" id="clear-data-button" type="button">
+            <span>
+              <strong>Очистить данные</strong>
+              <small>Удалить счет, копилки, историю и напоминания</small>
+            </span>
+            <b>×</b>
+          </button>
+        </section>
+
+        <section class="panel app-info-panel">
+          <span class="muted-label">Версия приложения</span>
+          <strong>Копилка MVP 1.0</strong>
+          <p>Личные финансы, цели, расходы, статистика и напоминания.</p>
+        </section>
+
+        <p class="status-message" id="more-status" hidden></p>
+      </section>
+
+      <section class="screen" id="privacy-screen" aria-label="Политика конфиденциальности">
+        <header class="app-header">
+          <button class="icon-button" data-nav="more" type="button" aria-label="Назад">‹</button>
+          <h1>Конфиденциальность</h1>
+          <span class="header-spacer"></span>
+        </header>
+
+        <article class="panel document-panel">
+          <p>Копилка помогает вести личный учет доходов, расходов, целей и напоминаний.</p>
+          <h2>Какие данные хранятся</h2>
+          <p>Суммы, комментарии, категории расходов, копилки, операции и напоминания, которые пользователь вводит самостоятельно.</p>
+          <h2>Где хранятся данные</h2>
+          <p>В текущей версии данные сохраняются локально в Telegram Mini App через localStorage на устройстве пользователя.</p>
+          <h2>Передача данных</h2>
+          <p>Приложение не передает финансовые данные на внешний сервер, если отдельно не подключена серверная синхронизация.</p>
+          <h2>Удаление данных</h2>
+          <p>Пользователь может очистить данные в разделе Еще. После очистки восстановить их нельзя.</p>
+        </article>
+      </section>
+
+      <section class="screen" id="terms-screen" aria-label="Пользовательское соглашение">
+        <header class="app-header">
+          <button class="icon-button" data-nav="more" type="button" aria-label="Назад">‹</button>
+          <h1>Соглашение</h1>
+          <span class="header-spacer"></span>
+        </header>
+
+        <article class="panel document-panel">
+          <p>Используя Копилку, пользователь соглашается с условиями этого раздела.</p>
+          <h2>Назначение</h2>
+          <p>Приложение предназначено для личного учета финансов, целей, расходов и напоминаний.</p>
+          <h2>Ответственность</h2>
+          <p>Копилка не является банком, бухгалтерской системой или финансовым консультантом. Пользователь сам отвечает за введенные данные и решения.</p>
+          <h2>Точность расчетов</h2>
+          <p>Приложение старается считать данные корректно, но важные суммы рекомендуется проверять самостоятельно.</p>
+          <h2>Ограничения</h2>
+          <p>Запрещено использовать приложение для незаконных действий или ввода чужих данных без разрешения.</p>
+        </article>
+      </section>
+
       <section class="screen" id="detail-screen" aria-label="Выбранная копилка">
         <header class="app-header">
           <button class="icon-button" data-nav="home" type="button" aria-label="Назад">‹</button>
@@ -485,6 +565,10 @@
       <button class="bottom-nav-button" type="button" data-tab-view="reminders">
         <span>◴</span>
         Напоминания
+      </button>
+      <button class="bottom-nav-button" type="button" data-tab-view="more">
+        <span>☰</span>
+        Еще
       </button>
     </nav>
 

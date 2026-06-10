@@ -51,6 +51,8 @@ const nodes = {
   remindersEmpty: document.querySelector("#reminders-empty"),
   remindersCount: document.querySelector("#reminders-count"),
   reminderStatus: document.querySelector("#reminder-status"),
+  clearDataButton: document.querySelector("#clear-data-button"),
+  moreStatus: document.querySelector("#more-status"),
   detailHeading: document.querySelector("#detail-heading"),
   detailIcon: document.querySelector("#detail-icon"),
   detailTitle: document.querySelector("#detail-title"),
@@ -292,14 +294,14 @@ function escapeHtml(value) {
 
 function showView(view) {
   state.currentView = view;
-  const rootView = ["home", "stats", "reminders"].includes(view) ? view : "home";
+  const rootView = ["home", "stats", "reminders", "more"].includes(view) ? view : "home";
   nodes.screens.forEach((screen) => {
     screen.classList.toggle("is-active", screen.id === `${view}-screen`);
   });
   nodes.tabButtons.forEach((button) => {
     button.classList.toggle("is-active", button.dataset.tabView === rootView);
   });
-  document.body.classList.toggle("show-bottom-nav", ["home", "stats", "reminders"].includes(view));
+  document.body.classList.toggle("show-bottom-nav", ["home", "stats", "reminders", "more"].includes(view));
   clearStatuses();
   render();
 }
@@ -314,6 +316,7 @@ function clearStatuses() {
     nodes.incomeStatus,
     nodes.expenseStatus,
     nodes.reminderStatus,
+    nodes.moreStatus,
   ].forEach((node) => {
     node.hidden = true;
     node.classList.remove("is-error");
@@ -1090,6 +1093,27 @@ function deleteReminder(reminderId) {
   render();
 }
 
+function clearAllData() {
+  const confirmed = window.confirm("Удалить все данные Копилки? Это действие нельзя отменить.");
+  if (!confirmed) return;
+
+  state.selectedGoalId = null;
+  state.editingAccountEntryId = null;
+  state.goals = [];
+  state.transactions = [];
+  state.expenses = [];
+  state.accountEntries = [];
+  state.reminders = [];
+  localStorage.removeItem(goalsKey);
+  localStorage.removeItem(transactionsKey);
+  localStorage.removeItem(expensesKey);
+  localStorage.removeItem(accountKey);
+  localStorage.removeItem(remindersKey);
+  saveState();
+  showStatus(nodes.moreStatus, "Данные очищены.");
+  render();
+}
+
 function notifyTelegramSave() {
   if (!isTelegramRuntime || !tg?.HapticFeedback) return;
 
@@ -1142,6 +1166,7 @@ nodes.deleteAccountEntryButton.addEventListener("click", () => deleteAccountEntr
 nodes.incomeForm.addEventListener("submit", createIncome);
 nodes.expenseForm.addEventListener("submit", createExpense);
 nodes.reminderForm.addEventListener("submit", createReminder);
+nodes.clearDataButton.addEventListener("click", clearAllData);
 nodes.goalForm.addEventListener("submit", createGoal);
 
 applyTelegramTheme();
