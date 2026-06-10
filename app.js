@@ -4,6 +4,7 @@ const goalsKey = "kopilka.goals.v4";
 const transactionsKey = "kopilka.transactions.v4";
 const expensesKey = "kopilka.expenses.v2";
 const accountKey = "kopilka.account.v1";
+const remindersKey = "kopilka.reminders.v1";
 const defaultExpenseCategory = "Еда";
 
 const state = {
@@ -15,6 +16,7 @@ const state = {
   transactions: loadList(transactionsKey, []).map(normalizeTransaction),
   expenses: loadList(expensesKey, []).map(normalizeExpense),
   accountEntries: loadList(accountKey, []).map(normalizeAccountEntry),
+  reminders: loadList(remindersKey, []).map(normalizeReminder),
 };
 
 const nodes = {
@@ -40,6 +42,15 @@ const nodes = {
   statsExpenseScaleFill: document.querySelector("#stats-expense-scale-fill"),
   statsCategoryList: document.querySelector("#stats-category-list"),
   statsEmpty: document.querySelector("#stats-empty"),
+  reminderForm: document.querySelector("#reminder-form"),
+  reminderPurpose: document.querySelector("#reminder-purpose"),
+  reminderComment: document.querySelector("#reminder-comment"),
+  reminderDate: document.querySelector("#reminder-date"),
+  reminderTime: document.querySelector("#reminder-time"),
+  reminderList: document.querySelector("#reminder-list"),
+  remindersEmpty: document.querySelector("#reminders-empty"),
+  remindersCount: document.querySelector("#reminders-count"),
+  reminderStatus: document.querySelector("#reminder-status"),
   detailHeading: document.querySelector("#detail-heading"),
   detailIcon: document.querySelector("#detail-icon"),
   detailTitle: document.querySelector("#detail-title"),
@@ -113,6 +124,7 @@ function saveState() {
   localStorage.setItem(transactionsKey, JSON.stringify(state.transactions));
   localStorage.setItem(expensesKey, JSON.stringify(state.expenses));
   localStorage.setItem(accountKey, JSON.stringify(state.accountEntries));
+  localStorage.setItem(remindersKey, JSON.stringify(state.reminders));
 }
 
 function normalizeTransaction(item) {
@@ -152,6 +164,18 @@ function normalizeAccountEntry(item) {
     date: item.date || createdAt.slice(0, 10),
     goalId: item.goalId || null,
     linkedId: item.linkedId || null,
+    createdAt,
+  };
+}
+
+function normalizeReminder(item) {
+  const createdAt = item.createdAt || new Date().toISOString();
+  return {
+    id: item.id || crypto.randomUUID(),
+    purpose: item.purpose || "Пополнить счет",
+    comment: item.comment || "",
+    date: item.date || today(),
+    time: item.time || "09:00",
     createdAt,
   };
 }
@@ -268,13 +292,14 @@ function escapeHtml(value) {
 
 function showView(view) {
   state.currentView = view;
+  const rootView = ["home", "stats", "reminders"].includes(view) ? view : "home";
   nodes.screens.forEach((screen) => {
     screen.classList.toggle("is-active", screen.id === `${view}-screen`);
   });
   nodes.tabButtons.forEach((button) => {
-    const rootView = view === "stats" ? "stats" : "home";
     button.classList.toggle("is-active", button.dataset.tabView === rootView);
   });
+  document.body.classList.toggle("show-bottom-nav", ["home", "stats", "reminders"].includes(view));
   clearStatuses();
   render();
 }
@@ -288,6 +313,7 @@ function clearStatuses() {
     nodes.accountEditStatus,
     nodes.incomeStatus,
     nodes.expenseStatus,
+    nodes.reminderStatus,
   ].forEach((node) => {
     node.hidden = true;
     node.classList.remove("is-error");
@@ -303,6 +329,10 @@ function showStatus(node, message, isError = false) {
 
 function today() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function currentTime() {
+  return new Date().toTimeString().slice(0, 5);
 }
 
 function renderHome() {
@@ -520,6 +550,62 @@ function renderStatistics() {
     .join("");
 }
 
+function reminderTimestamp(item) {
+  return `${item.date}T${item.time || "09:00"}:00`;
+}
+
+function reminderDateLabel(item) {
+  return new Date(reminderTimestamp(item)).toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function isReminderOverdue(item) {
+  return new Date(reminderTimestamp(item)).getTime() < Date.now();
+}
+
+function renderReminders() {
+  const items = state.reminders
+    .slice()
+    .sort((a, b) => reminderTimestamp(a).localeCompare(reminderTimestamp(b)));
+
+  nodes.remindersCount.textContent = String(items.length);
+  nodes.remindersEmpty.hidden = items.length > 0;
+  nodes.reminderList.innerHTML = items
+    .map((item) => {
+      const overdue = isReminderOverdue(item);
+      const comment = item.comment || "Без комментария";
+      return `
+        <li class="reminder-item">
+          <div class="reminder-top">
+            <div>
+              <div class="reminder-purpose">${escapeHtml(item.purpose)}</div>
+              <div class="reminder-comment">${escapeHtml(comment)}</div>
+            </div>
+            <span class="reminder-date ${overdue ? "is-overdue" : ""}">${reminderDateLabel(item)}</span>
+          </div>
+          <div class="reminder-actions">
+            <button class="edit-operation-button" type="button" data-complete-reminder="${item.id}">Готово</button>
+            <button class="delete-operation-button" type="button" data-delete-reminder="${item.id}">Удалить</button>
+          </div>
+        </li>
+      `;
+    })
+    .join("");
+
+  nodes.reminderList.querySelectorAll("[data-complete-reminder]").forEach((button) => {
+    button.addEventListener("click", () => deleteReminder(button.dataset.completeReminder));
+  });
+
+  nodes.reminderList.querySelectorAll("[data-delete-reminder]").forEach((button) => {
+    button.addEventListener("click", () => deleteReminder(button.dataset.deleteReminder));
+  });
+}
+
 function accountEntryTitle(item) {
   if (item.comment) return item.comment;
 
@@ -591,6 +677,7 @@ function render() {
   renderHistory();
   renderExpenses();
   renderStatistics();
+  renderReminders();
   renderAccountHistory();
 }
 
@@ -731,6 +818,11 @@ function openExpenseForm() {
   nodes.expenseCategory.value = defaultExpenseCategory;
   nodes.expenseDate.value = today();
   showView("expense-form");
+}
+
+function prepareReminderForm() {
+  nodes.reminderDate.value = nodes.reminderDate.value || today();
+  nodes.reminderTime.value = nodes.reminderTime.value || currentTime();
 }
 
 function applyQuickAmount(button) {
@@ -902,6 +994,25 @@ function createExpense(event) {
   showView("home");
 }
 
+function createReminder(event) {
+  event.preventDefault();
+  const reminder = {
+    id: crypto.randomUUID(),
+    purpose: nodes.reminderPurpose.value,
+    comment: nodes.reminderComment.value.trim(),
+    date: nodes.reminderDate.value || today(),
+    time: nodes.reminderTime.value || currentTime(),
+    createdAt: new Date().toISOString(),
+  };
+
+  state.reminders.push(reminder);
+  saveState();
+  nodes.reminderForm.reset();
+  prepareReminderForm();
+  showStatus(nodes.reminderStatus, "Напоминание добавлено.");
+  render();
+}
+
 function deleteSelectedGoal() {
   const goal = selectedGoal();
   if (!goal) {
@@ -973,6 +1084,12 @@ function deleteAccountEntry(entryId, statusNode = nodes.accountEditStatus) {
   showView("account-history");
 }
 
+function deleteReminder(reminderId) {
+  state.reminders = state.reminders.filter((item) => item.id !== reminderId);
+  saveState();
+  render();
+}
+
 function notifyTelegramSave() {
   if (!isTelegramRuntime || !tg?.HapticFeedback) return;
 
@@ -994,7 +1111,13 @@ nodes.openAccountHistoryButton.addEventListener("click", () => showView("account
 nodes.openIncomeButton.addEventListener("click", openIncomeForm);
 nodes.openExpensesButton.addEventListener("click", openExpenseForm);
 nodes.tabButtons.forEach((button) => {
-  button.addEventListener("click", () => showView(button.dataset.tabView));
+  button.addEventListener("click", () => {
+    if (button.dataset.tabView === "reminders") {
+      prepareReminderForm();
+    }
+
+    showView(button.dataset.tabView);
+  });
 });
 nodes.quickAmountButtons.forEach((button) => {
   button.addEventListener("click", () => applyQuickAmount(button));
@@ -1018,9 +1141,11 @@ nodes.accountEditForm.addEventListener("submit", saveAccountEntryEdit);
 nodes.deleteAccountEntryButton.addEventListener("click", () => deleteAccountEntry(state.editingAccountEntryId));
 nodes.incomeForm.addEventListener("submit", createIncome);
 nodes.expenseForm.addEventListener("submit", createExpense);
+nodes.reminderForm.addEventListener("submit", createReminder);
 nodes.goalForm.addEventListener("submit", createGoal);
 
 applyTelegramTheme();
 ensureSelectedGoal();
+document.body.classList.add("show-bottom-nav");
 saveState();
 render();

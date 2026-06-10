@@ -38,6 +38,7 @@ button,
 input,
 select {
   font: inherit;
+  min-width: 0;
 }
 
 button {
@@ -51,8 +52,13 @@ button {
   padding: max(18px, env(safe-area-inset-top)) 14px calc(98px + env(safe-area-inset-bottom));
 }
 
+body:not(.show-bottom-nav) .app {
+  padding-bottom: max(26px, env(safe-area-inset-bottom));
+}
+
 .screen {
   display: none;
+  min-width: 0;
 }
 
 .screen.is-active {
@@ -617,11 +623,13 @@ label span,
 
 .panel {
   padding: 16px;
+  min-width: 0;
 }
 
 .form-panel {
   display: grid;
   gap: 14px;
+  min-width: 0;
 }
 
 .form-context {
@@ -683,6 +691,7 @@ label span,
 label {
   display: grid;
   gap: 7px;
+  min-width: 0;
 }
 
 label[hidden] {
@@ -692,6 +701,7 @@ label[hidden] {
 input,
 select {
   width: 100%;
+  max-width: 100%;
   min-height: 52px;
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -699,6 +709,12 @@ select {
   color: var(--text);
   padding: 0 13px;
   outline: none;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
 }
 
 input:focus,
@@ -819,19 +835,86 @@ select:focus {
   margin-top: 0;
 }
 
+.reminder-section {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.reminder-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reminder-item {
+  display: grid;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
+}
+
+.reminder-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.reminder-purpose {
+  overflow-wrap: anywhere;
+  font-weight: 900;
+}
+
+.reminder-comment {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.reminder-date {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: rgba(105, 212, 95, 0.12);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.reminder-date.is-overdue {
+  background: rgba(239, 99, 86, 0.13);
+  color: var(--danger);
+}
+
+.reminder-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .bottom-nav {
   position: fixed;
   right: 50%;
   bottom: 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   width: min(100%, 560px);
   padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
   transform: translateX(50%);
   border-top: 1px solid var(--border);
   background: rgba(16, 23, 32, 0.92);
   backdrop-filter: blur(18px);
+}
+
+body:not(.show-bottom-nav) .bottom-nav {
+  display: none;
 }
 
 .bottom-nav-button {
@@ -876,6 +959,10 @@ select:focus {
   }
 
   .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row {
     grid-template-columns: 1fr;
   }
 }

@@ -96,6 +96,56 @@
         </section>
       </section>
 
+      <section class="screen" id="reminders-screen" aria-label="Напоминания">
+        <header class="app-header simple-header">
+          <h1>Напоминания</h1>
+        </header>
+
+        <form class="panel form-panel" id="reminder-form">
+          <label>
+            <span>Назначение</span>
+            <select id="reminder-purpose" name="purpose">
+              <option value="Пополнить счет">Пополнить счет</option>
+              <option value="Пополнить копилку">Пополнить копилку</option>
+              <option value="Пополнить цель">Пополнить цель</option>
+              <option value="Вернуть долг">Вернуть долг</option>
+              <option value="Забрать долг">Забрать долг</option>
+              <option value="Другое">Другое</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Комментарий</span>
+            <input id="reminder-comment" name="comment" maxlength="80" placeholder="Например: пополнить цель Телефон" />
+          </label>
+
+          <div class="form-row">
+            <label>
+              <span>Дата</span>
+              <input id="reminder-date" name="date" type="date" required />
+            </label>
+
+            <label>
+              <span>Время</span>
+              <input id="reminder-time" name="time" type="time" required />
+            </label>
+          </div>
+
+          <button class="primary-button wide-button" type="submit">Добавить напоминание</button>
+        </form>
+
+        <section class="reminder-section">
+          <div class="section-title-row">
+            <h2>Мои напоминания</h2>
+            <span id="reminders-count">0</span>
+          </div>
+          <ul class="reminder-list" id="reminder-list"></ul>
+          <p class="empty-state compact-empty" id="reminders-empty">Напоминаний пока нет. Добавьте первое, чтобы не забыть важное действие.</p>
+        </section>
+
+        <p class="status-message" id="reminder-status" hidden></p>
+      </section>
+
       <section class="screen" id="detail-screen" aria-label="Выбранная копилка">
         <header class="app-header">
           <button class="icon-button" data-nav="home" type="button" aria-label="Назад">‹</button>
@@ -431,6 +481,10 @@
       <button class="bottom-nav-button" type="button" data-tab-view="stats">
         <span>▥</span>
         Статистика
+      </button>
+      <button class="bottom-nav-button" type="button" data-tab-view="reminders">
+        <span>◴</span>
+        Напоминания
       </button>
     </nav>
 
