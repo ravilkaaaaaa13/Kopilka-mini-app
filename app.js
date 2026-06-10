@@ -1,3 +1,5 @@
+import { getSupabaseClient, isSupabaseConfigured } from "./supabaseClient.js";
+
 const tg = window.Telegram?.WebApp;
 const isTelegramRuntime = Boolean(tg?.initData);
 const goalsKey = "kopilka.goals.v4";
@@ -6,6 +8,7 @@ const expensesKey = "kopilka.expenses.v2";
 const accountKey = "kopilka.account.v1";
 const remindersKey = "kopilka.reminders.v1";
 const currencyKey = "kopilka.currency.v1";
+const dailyReminderKey = "kopilka.daily_reminder_enabled.v1";
 const currencies = {
   KZT: { symbol: "₸", locale: "ru-RU" },
   RUB: { symbol: "₽", locale: "ru-RU" },
@@ -18,6 +21,8 @@ const state = {
   selectedGoalId: null,
   editingAccountEntryId: null,
   operationType: "topup",
+  remindersStorage: "local",
+  dailyReminderEnabled: loadBoolean(dailyReminderKey, true),
   goals: loadList(goalsKey, []),
   transactions: loadList(transactionsKey, []).map(normalizeTransaction),
   expenses: loadList(expensesKey, []).map(normalizeExpense),
@@ -52,6 +57,7 @@ const nodes = {
   reminderForm: document.querySelector("#reminder-form"),
   reminderPurpose: document.querySelector("#reminder-purpose"),
   reminderComment: document.querySelector("#reminder-comment"),
+  reminderAmount: document.querySelector("#reminder-amount"),
   reminderDate: document.querySelector("#reminder-date"),
   reminderTime: document.querySelector("#reminder-time"),
   reminderList: document.querySelector("#reminder-list"),
@@ -61,6 +67,7 @@ const nodes = {
   clearDataButton: document.querySelector("#clear-data-button"),
   moreStatus: document.querySelector("#more-status"),
   currencySelect: document.querySelector("#currency-select"),
+  dailyReminderToggle: document.querySelector("#daily-reminder-toggle"),
   detailHeading: document.querySelector("#detail-heading"),
   detailIcon: document.querySelector("#detail-icon"),
   detailTitle: document.querySelector("#detail-title"),
@@ -129,6 +136,13 @@ function loadList(key, fallback) {
   }
 }
 
+function loadBoolean(key, fallback) {
+  const saved = localStorage.getItem(key);
+  if (saved === "true") return true;
+  if (saved === "false") return false;
+  return fallback;
+}
+
 function saveState() {
   localStorage.setItem(goalsKey, JSON.stringify(state.goals));
   localStorage.setItem(transactionsKey, JSON.stringify(state.transactions));
@@ -136,6 +150,7 @@ function saveState() {
   localStorage.setItem(accountKey, JSON.stringify(state.accountEntries));
   localStorage.setItem(remindersKey, JSON.stringify(state.reminders));
   localStorage.setItem(currencyKey, state.currency);
+  localStorage.setItem(dailyReminderKey, String(state.dailyReminderEnabled));
 }
 
 function loadCurrency() {
@@ -190,9 +205,62 @@ function normalizeReminder(item) {
     id: item.id || crypto.randomUUID(),
     purpose: item.purpose || "Пополнить счет",
     comment: item.comment || "",
+    amount: Number(item.amount) || 0,
     date: item.date || today(),
     time: item.time || "09:00",
+    status: item.status || "active",
     createdAt,
+  };
+}
+
+function telegramUserId() {
+  const id = tg?.initDataUnsafe?.user?.id;
+  return id ? String(id) : null;
+}
+
+function reminderDateTime(item) {
+  return `${item.date || today()}T${item.time || "09:00"}:00`;
+}
+
+function dateInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function timeInputValue(date) {
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
+function reminderFromSupabase(row) {
+  const dateTime = new Date(row.reminder_datetime || row.created_at || new Date().toISOString());
+  const iso = Number.isNaN(dateTime.getTime()) ? new Date().toISOString() : dateTime.toISOString();
+  const localDate = Number.isNaN(dateTime.getTime()) ? new Date() : dateTime;
+
+  return normalizeReminder({
+    id: row.id,
+    purpose: row.title || "Напоминание",
+    comment: row.title || "",
+    amount: Number(row.amount) || 0,
+    date: dateInputValue(localDate),
+    time: timeInputValue(localDate),
+    status: row.status || "active",
+    createdAt: row.created_at || iso,
+  });
+}
+
+function reminderToSupabase(item, userId = telegramUserId()) {
+  return {
+    id: item.id,
+    telegram_user_id: userId,
+    title: item.comment || item.purpose || "Напоминание",
+    amount: Number(item.amount) || 0,
+    reminder_datetime: new Date(reminderDateTime(item)).toISOString(),
+    status: item.status || "active",
+    created_at: item.createdAt || new Date().toISOString(),
   };
 }
 
@@ -597,12 +665,13 @@ function renderReminders() {
     .map((item) => {
       const overdue = isReminderOverdue(item);
       const comment = item.comment || "Без комментария";
+      const amount = item.amount ? ` · ${formatMoney(item.amount)}` : "";
       return `
         <li class="reminder-item">
           <div class="reminder-top">
             <div>
               <div class="reminder-purpose">${escapeHtml(item.purpose)}</div>
-              <div class="reminder-comment">${escapeHtml(comment)}</div>
+              <div class="reminder-comment">${escapeHtml(comment)}${amount}</div>
             </div>
             <span class="reminder-date ${overdue ? "is-overdue" : ""}">${reminderDateLabel(item)}</span>
           </div>
@@ -622,6 +691,107 @@ function renderReminders() {
   nodes.reminderList.querySelectorAll("[data-delete-reminder]").forEach((button) => {
     button.addEventListener("click", () => deleteReminder(button.dataset.deleteReminder));
   });
+}
+
+async function loadRemindersFromSupabase() {
+  if (!isSupabaseConfigured()) {
+    state.remindersStorage = "local";
+    return false;
+  }
+
+  const userId = telegramUserId();
+  if (!userId) {
+    state.remindersStorage = "local";
+    return false;
+  }
+
+  try {
+    const supabase = await getSupabaseClient();
+    if (!supabase) {
+      state.remindersStorage = "local";
+      return false;
+    }
+
+    const localReminders = state.reminders.map(normalizeReminder);
+    if (localReminders.length) {
+      const { error: upsertError } = await supabase
+        .from("reminders")
+        .upsert(localReminders.map((item) => reminderToSupabase(item, userId)), { onConflict: "id" });
+
+      if (upsertError) {
+        throw upsertError;
+      }
+    }
+
+    const { data, error } = await supabase
+      .from("reminders")
+      .select("id, telegram_user_id, title, amount, reminder_datetime, status, created_at")
+      .eq("telegram_user_id", userId)
+      .neq("status", "deleted")
+      .order("reminder_datetime", { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    state.reminders = (data || []).map(reminderFromSupabase);
+    state.remindersStorage = "supabase";
+    saveState();
+    return true;
+  } catch (error) {
+    console.warn("Supabase reminders fallback:", error);
+    state.remindersStorage = "local";
+    showStatus(nodes.reminderStatus, "Supabase недоступен. Напоминания временно сохранены на устройстве.", true);
+    return false;
+  }
+}
+
+async function saveReminderToSupabase(reminder) {
+  if (!isSupabaseConfigured()) return false;
+
+  const userId = telegramUserId();
+  if (!userId) return false;
+
+  try {
+    const supabase = await getSupabaseClient();
+    if (!supabase) return false;
+
+    const { error } = await supabase.from("reminders").upsert(reminderToSupabase(reminder, userId), { onConflict: "id" });
+    if (error) throw error;
+
+    state.remindersStorage = "supabase";
+    return true;
+  } catch (error) {
+    console.warn("Supabase reminder save fallback:", error);
+    state.remindersStorage = "local";
+    showStatus(nodes.reminderStatus, "Не удалось сохранить в Supabase. Оставил напоминание в localStorage.", true);
+    return false;
+  }
+}
+
+async function deleteReminderFromSupabase(reminderId) {
+  if (!isSupabaseConfigured()) return false;
+
+  const userId = telegramUserId();
+  if (!userId) return false;
+
+  try {
+    const supabase = await getSupabaseClient();
+    if (!supabase) return false;
+
+    const { error } = await supabase
+      .from("reminders")
+      .update({ status: "deleted" })
+      .eq("id", reminderId)
+      .eq("telegram_user_id", userId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.warn("Supabase reminder delete fallback:", error);
+    showStatus(nodes.reminderStatus, "Не удалось обновить Supabase. Изменение сохранено локально.", true);
+    return false;
+  }
 }
 
 function accountEntryTitle(item) {
@@ -699,6 +869,9 @@ function render() {
   renderAccountHistory();
   if (nodes.currencySelect) {
     nodes.currencySelect.value = state.currency;
+  }
+  if (nodes.dailyReminderToggle) {
+    nodes.dailyReminderToggle.checked = state.dailyReminderEnabled;
   }
 }
 
@@ -1015,19 +1188,22 @@ function createExpense(event) {
   showView("home");
 }
 
-function createReminder(event) {
+async function createReminder(event) {
   event.preventDefault();
   const reminder = {
     id: crypto.randomUUID(),
     purpose: nodes.reminderPurpose.value,
     comment: nodes.reminderComment.value.trim(),
+    amount: nodes.reminderAmount.value ? parseAmount(nodes.reminderAmount.value) || 0 : 0,
     date: nodes.reminderDate.value || today(),
     time: nodes.reminderTime.value || currentTime(),
+    status: "active",
     createdAt: new Date().toISOString(),
   };
 
   state.reminders.push(reminder);
   saveState();
+  await saveReminderToSupabase(reminder);
   nodes.reminderForm.reset();
   prepareReminderForm();
   showStatus(nodes.reminderStatus, "Напоминание добавлено.");
@@ -1105,9 +1281,10 @@ function deleteAccountEntry(entryId, statusNode = nodes.accountEditStatus) {
   showView("account-history");
 }
 
-function deleteReminder(reminderId) {
+async function deleteReminder(reminderId) {
   state.reminders = state.reminders.filter((item) => item.id !== reminderId);
   saveState();
+  await deleteReminderFromSupabase(reminderId);
   render();
 }
 
@@ -1123,15 +1300,40 @@ function clearAllData() {
   state.accountEntries = [];
   state.reminders = [];
   state.currency = "KZT";
+  state.dailyReminderEnabled = true;
   localStorage.removeItem(goalsKey);
   localStorage.removeItem(transactionsKey);
   localStorage.removeItem(expensesKey);
   localStorage.removeItem(accountKey);
   localStorage.removeItem(remindersKey);
   localStorage.removeItem(currencyKey);
+  localStorage.removeItem(dailyReminderKey);
   saveState();
   showStatus(nodes.moreStatus, "Данные очищены.");
   render();
+}
+
+function sendDailyReminderPreference() {
+  const enabled = state.dailyReminderEnabled;
+
+  if (!isTelegramRuntime || !tg?.sendData) {
+    showStatus(
+      nodes.moreStatus,
+      enabled
+        ? "Напоминание включено локально. В Telegram бот обновится при открытии Mini App внутри Telegram."
+        : "Напоминание отключено локально. В Telegram бот обновится при открытии Mini App внутри Telegram.",
+    );
+    return;
+  }
+
+  tg.sendData(
+    JSON.stringify({
+      type: "daily_reminder_subscription",
+      enabled,
+    }),
+  );
+
+  showStatus(nodes.moreStatus, enabled ? "Ежедневное напоминание включено." : "Ежедневное напоминание отключено.");
 }
 
 function notifyTelegramSave() {
@@ -1193,9 +1395,21 @@ nodes.currencySelect?.addEventListener("change", () => {
   saveState();
   render();
 });
+nodes.dailyReminderToggle?.addEventListener("change", () => {
+  state.dailyReminderEnabled = nodes.dailyReminderToggle.checked;
+  saveState();
+  sendDailyReminderPreference();
+  render();
+});
 
-applyTelegramTheme();
-ensureSelectedGoal();
-document.body.classList.add("show-bottom-nav");
-saveState();
-render();
+async function initializeApp() {
+  applyTelegramTheme();
+  ensureSelectedGoal();
+  document.body.classList.add("show-bottom-nav");
+  saveState();
+  render();
+  await loadRemindersFromSupabase();
+  render();
+}
+
+initializeApp();

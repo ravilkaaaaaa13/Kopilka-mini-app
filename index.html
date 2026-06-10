@@ -119,6 +119,11 @@
             <input id="reminder-comment" name="comment" maxlength="80" placeholder="Например: пополнить цель Телефон" />
           </label>
 
+          <label>
+            <span>Сумма</span>
+            <input id="reminder-amount" inputmode="decimal" name="amount" placeholder="Например 5000" />
+          </label>
+
           <div class="form-row">
             <label>
               <span>Дата</span>
@@ -162,6 +167,15 @@
               <option value="RUB">Рубли ₽</option>
               <option value="USD">Доллары $</option>
             </select>
+          </label>
+
+          <label class="toggle-row">
+            <span>
+              <strong>Ежедневное напоминание</strong>
+              <small>Бот будет писать около 20:00 по Казахстану</small>
+            </span>
+            <input id="daily-reminder-toggle" type="checkbox" role="switch" checked />
+            <i aria-hidden="true"></i>
           </label>
 
           <button class="more-row" type="button" data-nav="privacy">
@@ -669,6 +683,6 @@
       </button>
     </nav>
 
-    <script src="./app.js"></script>
+    <script type="module" src="./app.js"></script>
   </body>
 </html>
