@@ -1014,6 +1014,16 @@ select:focus {
   line-height: 1.5;
 }
 
+.document-panel ul {
+  display: grid;
+  gap: 7px;
+  margin: -2px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .bottom-nav {
   position: fixed;
   right: 50%;
