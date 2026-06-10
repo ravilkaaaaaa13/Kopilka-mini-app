@@ -20,6 +20,7 @@ const state = {
 const nodes = {
   screens: document.querySelectorAll(".screen"),
   totalBalance: document.querySelector("#total-balance"),
+  incomeTotal: document.querySelector("#income-total"),
   expensesTotal: document.querySelector("#expenses-total"),
   goalList: document.querySelector("#goal-list"),
   homeEmpty: document.querySelector("#home-empty"),
@@ -36,7 +37,6 @@ const nodes = {
   statsExpenseMonth: document.querySelector("#stats-expense-month"),
   statsExpenseScaleTotal: document.querySelector("#stats-expense-scale-total"),
   statsExpenseScaleNote: document.querySelector("#stats-expense-scale-note"),
-  statsExpenseScaleMax: document.querySelector("#stats-expense-scale-max"),
   statsExpenseScaleFill: document.querySelector("#stats-expense-scale-fill"),
   statsCategoryList: document.querySelector("#stats-category-list"),
   statsEmpty: document.querySelector("#stats-empty"),
@@ -214,6 +214,12 @@ function totalExpenses() {
   return state.expenses.reduce((total, expense) => total + expense.amount, 0);
 }
 
+function totalIncome() {
+  return state.accountEntries
+    .filter((item) => item.type === "income")
+    .reduce((total, item) => total + item.amount, 0);
+}
+
 function monthKey(date = today()) {
   return String(date).slice(0, 7);
 }
@@ -301,6 +307,7 @@ function today() {
 
 function renderHome() {
   nodes.totalBalance.textContent = formatMoney(totalBalance());
+  nodes.incomeTotal.textContent = formatMoney(totalIncome());
   nodes.expensesTotal.textContent = formatMoney(totalExpenses());
   nodes.homeEmpty.hidden = state.goals.length > 0;
   nodes.goalList.innerHTML = state.goals
@@ -487,7 +494,6 @@ function renderStatistics() {
     : spent
       ? "Доходов нет"
       : "Расходов нет";
-  nodes.statsExpenseScaleMax.textContent = income ? `Доход ${formatMoney(income)}` : `Расход ${formatMoney(spent)}`;
   nodes.statsExpenseScaleFill.style.width = `${totalScalePercent}%`;
   nodes.statsExpenseScaleFill.innerHTML = categoryItems
     .map(([category, amount], index) => {
