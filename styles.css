@@ -1,5 +1,9 @@
 :root {
   color-scheme: dark;
+  --app-max: 430px;
+  --page-x: 12px;
+  --page-top: 16px;
+  --page-bottom: 92px;
   --bg: #101720;
   --panel: #182333;
   --panel-soft: #202d3f;
@@ -21,10 +25,12 @@
 html,
 body {
   min-height: 100%;
+  overflow-x: hidden;
 }
 
 body {
   margin: 0;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(105, 212, 95, 0.14), transparent 34%),
     radial-gradient(circle at bottom right, rgba(70, 133, 255, 0.08), transparent 32%),
@@ -39,17 +45,21 @@ input,
 select {
   font: inherit;
   min-width: 0;
+  max-width: 100%;
 }
 
 button {
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .app {
-  width: min(100%, 560px);
+  width: 100%;
+  max-width: var(--app-max);
   min-height: 100vh;
   margin: 0 auto;
-  padding: max(18px, env(safe-area-inset-top)) 14px calc(98px + env(safe-area-inset-bottom));
+  overflow-x: hidden;
+  padding: max(var(--page-top), env(safe-area-inset-top)) var(--page-x) calc(var(--page-bottom) + env(safe-area-inset-bottom));
 }
 
 body:not(.show-bottom-nav) .app {
@@ -58,6 +68,8 @@ body:not(.show-bottom-nav) .app {
 
 .screen {
   display: none;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
 }
 
@@ -67,10 +79,10 @@ body:not(.show-bottom-nav) .app {
 
 .app-header {
   display: grid;
-  grid-template-columns: 42px 1fr 42px;
-  gap: 10px;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  gap: 8px;
   align-items: center;
-  min-height: 52px;
+  min-height: 50px;
   margin-bottom: 12px;
 }
 
@@ -100,7 +112,7 @@ body:not(.show-bottom-nav) .app {
 }
 
 .header-spacer {
-  width: 42px;
+  width: 40px;
 }
 
 .eyebrow,
@@ -134,8 +146,9 @@ h2 {
 .round-button,
 .icon-button {
   display: grid;
-  width: 42px;
-  height: 42px;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
   place-items: center;
   border: 0;
   border-radius: 50%;
@@ -159,6 +172,9 @@ h2 {
 .panel,
 .goal-card,
 .goal-detail-card {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 18px;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015)), var(--panel);
@@ -166,13 +182,13 @@ h2 {
 }
 
 .balance-card {
-  padding: 18px;
+  padding: 16px;
 }
 
 .balance-card strong {
   display: block;
   margin-bottom: 8px;
-  font-size: 36px;
+  font-size: 34px;
   line-height: 1;
 }
 
@@ -202,7 +218,7 @@ h2 {
 
 .quick-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 10px;
   margin-top: 12px;
 }
@@ -214,8 +230,10 @@ h2 {
   justify-content: space-between;
   gap: 14px;
   width: 100%;
-  min-height: 82px;
-  padding: 16px;
+  max-width: 100%;
+  overflow: hidden;
+  min-height: 76px;
+  padding: 14px;
   border: 1px solid rgba(239, 99, 86, 0.28);
   border-radius: 18px;
   background: linear-gradient(145deg, rgba(239, 99, 86, 0.15), rgba(255, 255, 255, 0.018)), var(--panel);
@@ -232,6 +250,7 @@ h2 {
 .income-card strong,
 .expense-card strong {
   display: block;
+  overflow-wrap: anywhere;
   font-size: 18px;
   line-height: 1.1;
 }
@@ -240,6 +259,7 @@ h2 {
 .expense-icon {
   position: relative;
   display: grid;
+  flex: 0 0 42px;
   width: 42px;
   height: 42px;
   place-items: center;
@@ -283,14 +303,17 @@ h2 {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 10px;
   margin-bottom: 12px;
 }
 
 .stat-card {
-  min-height: 104px;
-  padding: 15px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  min-height: 86px;
+  padding: 14px;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015)), var(--panel);
@@ -383,10 +406,10 @@ h2 {
 }
 
 .expense-overview-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 .expense-overview-header strong {
@@ -396,6 +419,7 @@ h2 {
 }
 
 .expense-overview-header > span {
+  justify-self: start;
   padding: 7px 9px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.075);
@@ -440,7 +464,7 @@ h2 {
 
 .goal-card {
   display: grid;
-  grid-template-columns: 60px 1fr;
+  grid-template-columns: 54px minmax(0, 1fr);
   gap: 12px;
   align-items: center;
   padding: 14px;
@@ -456,8 +480,8 @@ h2 {
 }
 
 .goal-icon {
-  width: 60px;
-  height: 60px;
+  width: 54px;
+  height: 54px;
 }
 
 .goal-body {
@@ -471,6 +495,13 @@ h2 {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-width: 0;
+}
+
+.goal-title-row > *,
+.progress-row > *,
+.history-meta-row > * {
+  min-width: 0;
 }
 
 .goal-title {
@@ -529,14 +560,14 @@ label span,
 
 .detail-title-row {
   display: grid;
-  grid-template-columns: 68px 1fr;
+  grid-template-columns: 64px minmax(0, 1fr);
   gap: 14px;
   align-items: center;
 }
 
 .detail-icon {
-  width: 68px;
-  height: 68px;
+  width: 64px;
+  height: 64px;
   font-size: 34px;
 }
 
@@ -581,7 +612,7 @@ label span,
 
 .action-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 10px;
   margin-top: 12px;
 }
@@ -589,6 +620,8 @@ label span,
 .primary-button,
 .secondary-button,
 .danger-button {
+  width: 100%;
+  max-width: 100%;
   min-height: 50px;
   border-radius: 14px;
   font-weight: 850;
@@ -622,7 +655,7 @@ label span,
 }
 
 .panel {
-  padding: 16px;
+  padding: 14px;
   min-width: 0;
 }
 
@@ -671,7 +704,7 @@ label span,
 .quick-amounts {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 6px;
   margin-top: -7px;
 }
 
@@ -745,6 +778,9 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 input:focus,
@@ -784,9 +820,11 @@ select:focus {
 
 .history-item {
   display: grid;
-  grid-template-columns: 1fr auto;
+  width: 100%;
+  max-width: 100%;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
-  align-items: center;
+  align-items: start;
   padding: 13px;
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -802,7 +840,7 @@ select:focus {
 
 .history-amount {
   font-weight: 900;
-  text-align: right;
+  text-align: left;
 }
 
 .history-amount.topup {
@@ -832,6 +870,7 @@ select:focus {
 
 .edit-operation-button,
 .delete-operation-button {
+  flex: 1 1 120px;
   min-height: 34px;
   border: 1px solid rgba(239, 99, 86, 0.35);
   border-radius: 10px;
@@ -881,6 +920,9 @@ select:focus {
 
 .reminder-item {
   display: grid;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
   gap: 10px;
   padding: 13px;
   border: 1px solid var(--border);
@@ -890,10 +932,9 @@ select:focus {
 }
 
 .reminder-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
 }
 
 .reminder-purpose {
@@ -909,6 +950,7 @@ select:focus {
 }
 
 .reminder-date {
+  justify-self: start;
   padding: 6px 9px;
   border-radius: 999px;
   background: rgba(105, 212, 95, 0.12);
@@ -925,6 +967,7 @@ select:focus {
 
 .reminder-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -939,6 +982,8 @@ select:focus {
   justify-content: space-between;
   gap: 12px;
   width: 100%;
+  max-width: 100%;
+  overflow: hidden;
   min-height: 72px;
   padding: 12px;
   border: 1px solid var(--border);
@@ -1031,8 +1076,9 @@ select:focus {
   z-index: 20;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  width: min(100%, 560px);
-  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  width: 100%;
+  max-width: var(--app-max);
+  padding: 8px var(--page-x) calc(8px + env(safe-area-inset-bottom));
   transform: translateX(50%);
   border-top: 1px solid var(--border);
   background: rgba(16, 23, 32, 0.92);
@@ -1046,24 +1092,57 @@ body:not(.show-bottom-nav) .bottom-nav {
 .bottom-nav-button {
   display: grid;
   gap: 3px;
-  min-height: 52px;
+  min-width: 0;
+  min-height: 50px;
   place-items: center;
   border: 0;
   border-radius: 14px;
   background: transparent;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 850;
+  line-height: 1.1;
+  text-align: center;
 }
 
 .bottom-nav-button span {
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1;
 }
 
 .bottom-nav-button.is-active {
   background: rgba(105, 212, 95, 0.14);
   color: var(--accent);
+}
+
+@media (min-width: 431px) {
+  :root {
+    --app-max: 560px;
+    --page-x: 14px;
+  }
+
+  .quick-actions,
+  .stats-grid,
+  .action-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .history-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .history-amount {
+    text-align: right;
+  }
+
+  .expense-overview-header,
+  .reminder-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
 }
 
 @media (max-width: 380px) {
@@ -1073,27 +1152,44 @@ body:not(.show-bottom-nav) .bottom-nav {
   }
 
   .balance-card strong {
-    font-size: 31px;
+    font-size: 30px;
   }
 
-  .action-grid {
-    grid-template-columns: 1fr;
+  h1 {
+    font-size: 21px;
   }
 
-  .quick-actions {
-    grid-template-columns: 1fr;
+  .income-card,
+  .expense-card {
+    gap: 10px;
   }
 
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
+  .bottom-nav-button {
+    font-size: 9px;
   }
 }
 
 @media (max-width: 430px) {
+  .app-header {
+    grid-template-columns: 38px minmax(0, 1fr) 38px;
+  }
+
+  .header-spacer,
+  .round-button,
+  .icon-button {
+    width: 38px;
+    height: 38px;
+  }
+
+  .detail-title-row {
+    grid-template-columns: 58px minmax(0, 1fr);
+  }
+
+  .detail-icon {
+    width: 58px;
+    height: 58px;
+  }
+
   input[type="date"],
   input[type="time"] {
     font-size: 15px;
@@ -1102,12 +1198,12 @@ body:not(.show-bottom-nav) .bottom-nav {
   }
 
   .form-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 @media (max-width: 560px) {
   .form-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
